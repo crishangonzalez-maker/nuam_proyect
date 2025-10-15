@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Nombre de la aplicación -->
+    <string name="app_name">MiApp</string>
+
+    <!-- Splash Screen -->
+    <string name="nombre_app">MiApp</string>
+
+    <!-- Login -->
+    <string name="titulo_login">Iniciar Sesión</string>
+    <string name="hint_usuario">Usuario</string>
+    <string name="hint_contrasena">Contraseña</string>
+    <string name="btn_iniciar_sesion">Iniciar Sesión</string>
+    <string name="btn_recuperar_clave">Recuperar Clave</string>
+    <string name="btn_registrar_cuenta">Registrar Cuenta</string>
+
+    <!-- Mensajes Login -->
+    <string name="dialogo_login_exitoso_titulo">Inicio de sesión exitoso</string>
+    <string name="dialogo_login_exitoso_mensaje">Bienvenido</string>
+    <string name="dialogo_error_titulo">Error</string>
+    <string name="dialogo_error_mensaje">Debe ingresar usuario y contraseña</string>
+
+    <!-- Registro -->
+    <string name="titulo_registro">Registrar Cuenta</string>
+    <string name="hint_nombre">Nombre completo</string>
+    <string name="hint_correo">Correo electrónico</string>
+    <string name="hint_contrasena_registro">Contraseña</string>
+    <string name="btn_registrar">Registrar</string>
+    <string name="dialogo_registro_titulo">Registro exitoso</string>
+    <string name="dialogo_registro_mensaje">Cuenta creada correctamente</string>
+
+    <!-- Recuperar Clave -->
+    <string name="titulo_recuperar">Recuperar Clave</string>
+    <string name="hint_correo_recuperar">Correo asociado a la cuenta</string>
+    <string name="btn_enviar_recuperacion">Enviar enlace de recuperación</string>
+    <string name="dialogo_recuperar_titulo">Recuperación enviada</string>
+    <string name="dialogo_recuperar_mensaje">Se envió un enlace de recuperación al correo</string>
+    <string name="iniciar_sesion">iniciar sesion</string>
+    <string name="usuario">usuario</string>
+    <string name="contrasena">contraseña</string>
+    <string name="recuperar_clave">recuperar clave</string>
+    <string name="registrar_cuenta">registrar cuenta</string>
+    <string name="correo_asociado_a_la_cuenta">correo_asociado a la cuenta</string>
+    <string name="enviar_enlace_de_recuperacion">enviar enlace de recuperacion</string>
+    <string name="nombre_completo">nombre completo</string>
+    <string name="correo_electronico">correo electronico</string>
+    <string name="registrar">registrar</string>
+    <string name="todo">todo</string>
+    <string name="miapp">miapp</string>
+    <string name="volver_al_inicio">Volver al inicio</string>
+    <string name="Atras">Atras</string>
+    <string name="enviar_correo_de_recuperaci_n">Enviar correo de recuperación</string>
+    <string name="Enviar_correo">Enviar Correo</string>
+    <string name="Correo_Electronico">Correo Electronico</string>
+    <string name="Recupera_Tu_Clave">Recupera Tu Clave</string>
+    <string name="Volver">Volver</string>
+</resources>
