@@ -25,7 +25,8 @@ class CalificacionTributariaForm(forms.ModelForm):
             }),
             'fecha_pago': forms.DateInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'type': 'date',
+                'format': '%Y-%m-%d'  
             }),
             'secuencia_evento': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -233,27 +234,28 @@ class FactoresForm(forms.ModelForm):
         }
 
     def clean(self):
-        """Validar que la suma de factores 8-16 no supere 1"""
         cleaned_data = super().clean()
         
-        factores_sum = sum([
-            cleaned_data.get('factor_8', Decimal('0')),
-            cleaned_data.get('factor_9', Decimal('0')),
-            cleaned_data.get('factor_10', Decimal('0')),
-            cleaned_data.get('factor_11', Decimal('0')),
-            cleaned_data.get('factor_12', Decimal('0')),
-            cleaned_data.get('factor_13', Decimal('0')),
-            cleaned_data.get('factor_14', Decimal('0')),
-            cleaned_data.get('factor_15', Decimal('0')),
-            cleaned_data.get('factor_16', Decimal('0'))
-        ])
+        factores_validar = [
+            'factor8', 'factor9', 'factor10', 'factor11', 'factor12',
+            'factor13', 'factor14', 'factor15', 'factor16'
+        ]
         
-        if factores_sum > Decimal('1.0'):
+        suma_factores = Decimal('0.00000000')
+        
+        for factor_field in factores_validar:
+            valor = cleaned_data.get(factor_field)
+            if valor is None:
+                valor = Decimal('0.00000000')
+            suma_factores += valor
+
+        if suma_factores > Decimal('1.00000000'):
             raise forms.ValidationError(
-                f"La suma de los factores del 8 al 16 no puede superar 1. "
-                f"Suma actual: {factores_sum:.8f}"
+                f"La suma de los factores del 8 al 16 ({suma_factores:.8f}) "
+                f"no puede ser mayor a 1.00000000"
             )
         
+        # NO agregar suma_factores_8_16 a cleaned_data
         return cleaned_data
 
 class FiltroCalificacionesForm(forms.Form):

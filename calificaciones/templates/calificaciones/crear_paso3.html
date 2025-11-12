@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
+    <div class="col-md-12">
         <!-- Progreso de pasos -->
         <div class="step-progress">
             <div class="step completed">
@@ -22,7 +22,7 @@
         <!-- Resumen datos paso 1 -->
         <div class="card mb-4">
             <div class="card-header bg-light">
-                <h5 class="mb-0">Resumen Datos Básicos</h5>
+                <h5 class="mb-0">Resumen - Datos Básicos</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -36,43 +36,134 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header bg-success text-white">
                 <h3 class="mb-0">Paso 3: Factores Calculados</h3>
             </div>
             <div class="card-body">
                 {% if factores_calculados %}
                 <div class="alert alert-success">
-                    <strong>Factores calculados automáticamente</strong> a partir de los montos ingresados.
+                    <strong>✅ Factores calculados automáticamente</strong> a partir de los montos ingresados.
                     Puede modificar los valores manualmente si es necesario.
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <strong>📝 Ingreso manual de factores</strong>
+                    Complete los factores manualmente según la especificación DJ 1949.
                 </div>
                 {% endif %}
 
                 <form method="post">
                     {% csrf_token %}
                     
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Error en la validación:</strong>
+                        <ul>
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
                     <div class="row">
                         {% for field in form %}
                         <div class="col-md-6 mb-3">
-                            {{ field.label_tag }}
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                            </label>
                             {{ field }}
                             {% if field.errors %}
-                                <div class="text-danger">{{ field.errors }}</div>
+                                <div class="text-danger small">{{ field.errors.0 }}</div>
                             {% endif %}
                         </div>
                         {% endfor %}
                     </div>
 
-                    <div class="alert alert-warning">
-                        <strong>Validación:</strong> La suma de los factores del 8 al 16 no debe superar 1.
+                    <!-- Resumen de validación -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-warning">
+                            <h6 class="mb-0">Validación de Factores</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <strong>Suma de factores del 8 al 16:</strong>
+                                    <span id="suma-factores">0.00000000</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span id="estado-validacion" class="badge bg-danger">NO VÁLIDO</span>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 10px;">
+                                <div id="barra-progreso" class="progress-bar bg-danger" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">La suma debe ser menor o igual a 1.00000000</small>
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'crear_calificacion_paso2' %}" class="btn btn-secondary">← Anterior</a>
-                        <button type="submit" class="btn btn-success">Guardar Calificación</button>
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'crear_calificacion_paso2' %}" class="btn btn-secondary">
+                            ← Anterior
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            ✅ Guardar Calificación
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const factorInputs = document.querySelectorAll('.factor-input');
+    const sumaElement = document.getElementById('suma-factores');
+    const estadoElement = document.getElementById('estado-validacion');
+    const barraProgreso = document.getElementById('barra-progreso');
+    
+    function calcularSumaFactores() {
+        let suma = 0;
+        let factoresContados = 0;
+        
+        factorInputs.forEach((input, index) => {
+            if (index < 9) { // Factores del 8 al 16 (9 factores)
+                const valor = parseFloat(input.value) || 0;
+                suma += valor;
+                factoresContados++;
+            }
+        });
+        
+        // Actualizar interfaz
+        sumaElement.textContent = suma.toFixed(8);
+        
+        // Actualizar barra de progreso (máx 120% para visualización)
+        const porcentaje = Math.min((suma / 1) * 100, 120);
+        barraProgreso.style.width = porcentaje + '%';
+        
+        // Actualizar estado
+        if (suma <= 1.0) {
+            estadoElement.textContent = 'VÁLIDO';
+            estadoElement.className = 'badge bg-success';
+            barraProgreso.className = 'progress-bar bg-success';
+        } else {
+            estadoElement.textContent = 'NO VÁLIDO';
+            estadoElement.className = 'badge bg-danger';
+            barraProgreso.className = 'progress-bar bg-danger';
+        }
+    }
+    
+    // Agregar event listeners
+    factorInputs.forEach(input => {
+        input.addEventListener('input', calcularSumaFactores);
+        input.addEventListener('change', calcularSumaFactores);
+    });
+    
+    // Calcular inicialmente
+    calcularSumaFactores();
+});
+</script>
 {% endblock %}

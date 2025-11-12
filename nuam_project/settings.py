@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'nuam_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  # Temporalmente usa SQLite
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',  # Base de datos por defecto
+        'USER': 'postgres',  # Usuario
+        'PASSWORD': '123',  # ⚠️ Necesitas agregar esto
+        'HOST': 'localhost',  # Host
+        'PORT': '5432',       # Puerto
     }
 }
 
