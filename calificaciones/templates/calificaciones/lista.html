@@ -106,11 +106,29 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="#" class="btn btn-outline-primary">👁️ Ver</a>
-                                    <a href="#" class="btn btn-outline-warning">✏️ Editar</a>
-                                    <form method="post" action="{% url 'eliminar_calificacion' calificacion.id_calificacion %}" style="display: inline;">
+                                    <!-- Botón Ver - CORREGIDO -->
+                                    <a href="{% url 'detalle_calificacion' calificacion.id_calificacion %}" 
+                                       class="btn btn-outline-primary"
+                                       title="Ver detalles completos">
+                                        👁️ Ver
+                                    </a>
+                                    
+                                    <!-- Botón Editar -->
+                                    <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" 
+                                       class="btn btn-outline-warning"
+                                       title="Editar calificación">
+                                        ✏️ Editar
+                                    </a>
+                                    
+                                    <!-- Botón Eliminar -->
+                                    <form method="post" 
+                                          action="{% url 'eliminar_calificacion' calificacion.id_calificacion %}" 
+                                          style="display: inline;"
+                                          onsubmit="return confirm('¿Está seguro de eliminar la calificación de {{ calificacion.instrumento }}?');">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('¿Está seguro de eliminar esta calificación?')">
+                                        <button type="submit" 
+                                                class="btn btn-outline-danger"
+                                                title="Eliminar calificación">
                                             🗑️ Eliminar
                                         </button>
                                     </form>

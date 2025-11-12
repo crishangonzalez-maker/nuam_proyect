@@ -7,4 +7,10 @@ urlpatterns = [
     path('crear/paso2/', views.crear_calificacion_paso2, name='crear_calificacion_paso2'),
     path('crear/paso3/', views.crear_calificacion_paso3, name='crear_calificacion_paso3'),
     path('eliminar/<int:id_calificacion>/', views.eliminar_calificacion, name='eliminar_calificacion'),
+    # URLs de edición
+    path('editar/<int:id_calificacion>/paso1/', views.editar_calificacion_paso1, name='editar_calificacion_paso1'),
+    path('editar/<int:id_calificacion>/paso2/', views.editar_calificacion_paso2, name='editar_calificacion_paso2'),
+    path('editar/<int:id_calificacion>/paso3/', views.editar_calificacion_paso3, name='editar_calificacion_paso3'),
+    # Vista de detalle
+    path('ver/<int:id_calificacion>/', views.detalle_calificacion, name='detalle_calificacion'),
 ]

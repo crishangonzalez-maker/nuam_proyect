@@ -1,0 +1,250 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>👁️ Detalle de Calificación Tributaria</h1>
+            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">
+                ← Volver al Listado
+            </a>
+        </div>
+
+        <!-- Mostrar mensajes -->
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Tarjeta de información básica -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📋 Información Básica</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>ID Calificación:</strong><br>
+                        <span class="badge bg-dark fs-6">{{ calificacion.id_calificacion }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Instrumento:</strong><br>
+                        <span class="fs-5">{{ calificacion.instrumento }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Ejercicio:</strong><br>
+                        {{ calificacion.ejercicio }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Mercado:</strong><br>
+                        <span class="badge bg-info">{{ calificacion.get_mercado_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <strong>Fecha de Pago:</strong><br>
+                        {{ calificacion.fecha_pago|date:"d/m/Y" }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Secuencia Evento:</strong><br>
+                        {{ calificacion.secuencia_evento }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Número Dividendo:</strong><br>
+                        {{ calificacion.numero_dividendo }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <strong>Descripción Dividendo:</strong><br>
+                        {{ calificacion.descripcion_dividendo|default:"-" }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Origen:</strong><br>
+                        <span class="badge bg-{% if calificacion.origen == 'Corredor' %}primary{% else %}success{% endif %}">
+                            {{ calificacion.get_origen_display }}
+                        </span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Acogido ISFUT:</strong><br>
+                        {% if calificacion.acogido_isfut %}
+                            <span class="badge bg-success">Sí</span>
+                        {% else %}
+                            <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if calificacion.valor_historico %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <strong>Valor Histórico:</strong><br>
+                        $ {{ calificacion.valor_historico }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Factores de Calificación -->
+        {% if factores %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">📊 Factores de Calificación</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Factores del 1 al 10 -->
+                    <div class="col-md-6">
+                        <h5>Factores 1-10</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td><strong>Factor 1:</strong></td><td class="text-end">{{ factores.factor1|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 2:</strong></td><td class="text-end">{{ factores.factor2|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 3:</strong></td><td class="text-end">{{ factores.factor3|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 4:</strong></td><td class="text-end">{{ factores.factor4|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 5:</strong></td><td class="text-end">{{ factores.factor5|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 6:</strong></td><td class="text-end">{{ factores.factor6|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 7:</strong></td><td class="text-end">{{ factores.factor7|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 8:</strong></td><td class="text-end">{{ factores.factor8|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 9:</strong></td><td class="text-end">{{ factores.factor9|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 10:</strong></td><td class="text-end">{{ factores.factor10|default:"-"|floatformat:8 }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Factores del 11 al 20 -->
+                    <div class="col-md-6">
+                        <h5>Factores 11-20</h5>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td><strong>Factor 11:</strong></td><td class="text-end">{{ factores.factor11|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 12:</strong></td><td class="text-end">{{ factores.factor12|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 13:</strong></td><td class="text-end">{{ factores.factor13|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 14:</strong></td><td class="text-end">{{ factores.factor14|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 15:</strong></td><td class="text-end">{{ factores.factor15|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 16:</strong></td><td class="text-end">{{ factores.factor16|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 17:</strong></td><td class="text-end">{{ factores.factor17|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 18:</strong></td><td class="text-end">{{ factores.factor18|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 19:</strong></td><td class="text-end">{{ factores.factor19|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong>Factor 20:</strong></td><td class="text-end">{{ factores.factor20|default:"-"|floatformat:8 }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Factores del 21 al 37 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5>Factores 21-37</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Factor 21:</strong></td><td>{{ factores.factor21|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 22:</strong></td><td>{{ factores.factor22|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 23:</strong></td><td>{{ factores.factor23|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 24:</strong></td><td>{{ factores.factor24|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Factor 25:</strong></td><td>{{ factores.factor25|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 26:</strong></td><td>{{ factores.factor26|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 27:</strong></td><td>{{ factores.factor27|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 28:</strong></td><td>{{ factores.factor28|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Factor 29:</strong></td><td>{{ factores.factor29|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 30:</strong></td><td>{{ factores.factor30|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 31:</strong></td><td>{{ factores.factor31|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 32:</strong></td><td>{{ factores.factor32|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Factor 33:</strong></td><td>{{ factores.factor33|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 34:</strong></td><td>{{ factores.factor34|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 35:</strong></td><td>{{ factores.factor35|default:"-"|floatformat:8 }}</td>
+                                        <td><strong>Factor 36:</strong></td><td>{{ factores.factor36|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Factor 37:</strong></td><td>{{ factores.factor37|default:"-"|floatformat:8 }}</td>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <h5>⚠️ No se encontraron factores</h5>
+            <p>Esta calificación no tiene factores asociados en la base de datos.</p>
+            <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" class="btn btn-warning">
+                ✏️ Agregar Factores
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Historial de Auditoría -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">📝 Historial de Auditoría</h4>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Acción</th>
+                                <th>Usuario</th>
+                                <th>Detalle</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.fecha_hora|date:"d/m/Y H:i" }}</td>  <!-- CORREGIDO: fecha_hora -->
+                                <td>
+                                    <span class="badge bg-{% if log.accion == 'CREATE' %}success{% elif log.accion == 'UPDATE' %}warning{% else %}danger{% endif %}">
+                                        {{ log.get_accion_display }}
+                                    </span>
+                                </td>
+                                <td>{{ log.usuario_responsable.nombre }}</td>
+                                <td>{{ log.detalle }}</td>
+                                <td><small>{{ log.ip_origen }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No hay registros de auditoría para esta calificación.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">
+                ← Volver al Listado
+            </a>
+            <div>
+                <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" 
+                   class="btn btn-warning">
+                    ✏️ Editar Calificación
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

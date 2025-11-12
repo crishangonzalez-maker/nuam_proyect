@@ -1,0 +1,243 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Progreso de pasos -->
+        <div class="step-progress">
+            <div class="step active">
+                <div class="step-number">1</div>
+                <div>Datos Básicos</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>Ingreso Montos</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Factores</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">✏️ Editar Calificación - Paso 1: Datos Básicos</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>📝 Editando:</strong> Calificación ID: {{ calificacion.id_calificacion }}
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- MOSTRAR ERRORES GENERALES -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>Errores generales:</strong>
+                        <ul>
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.ejercicio.id_for_label }}" class="form-label">
+                                {{ form.ejercicio.label }} *
+                            </label>
+                            {{ form.ejercicio }}
+                            <!-- MOSTRAR ERRORES DEL CAMPO EJERCICIO -->
+                            {% if form.ejercicio.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.ejercicio.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.mercado.id_for_label }}" class="form-label">
+                                {{ form.mercado.label }} *
+                            </label>
+                            {{ form.mercado }}
+                            {% if form.mercado.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.mercado.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="{{ form.instrumento.id_for_label }}" class="form-label">
+                                {{ form.instrumento.label }} *
+                            </label>
+                            {{ form.instrumento }}
+                            {% if form.instrumento.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.instrumento.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Nombre del instrumento (ej: COPEC, FALABELLA)</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.tipo_sociedad.id_for_label }}" class="form-label">
+                                {{ form.tipo_sociedad.label }}
+                            </label>
+                            {{ form.tipo_sociedad }}
+                            {% if form.tipo_sociedad.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.tipo_sociedad.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.fecha_pago.id_for_label }}" class="form-label">
+                                {{ form.fecha_pago.label }} *
+                            </label>
+                            {{ form.fecha_pago }}
+                            {% if form.fecha_pago.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.fecha_pago.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.secuencia_evento.id_for_label }}" class="form-label">
+                                {{ form.secuencia_evento.label }} *
+                            </label>
+                            {{ form.secuencia_evento }}
+                            {% if form.secuencia_evento.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.secuencia_evento.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Debe ser mayor a 10,000</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.numero_dividendo.id_for_label }}" class="form-label">
+                                {{ form.numero_dividendo.label }} *
+                            </label>
+                            {{ form.numero_dividendo }}
+                            {% if form.numero_dividendo.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.numero_dividendo.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.descripcion_dividendo.id_for_label }}" class="form-label">
+                            {{ form.descripcion_dividendo.label }}
+                        </label>
+                        {{ form.descripcion_dividendo }}
+                        {% if form.descripcion_dividendo.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.descripcion_dividendo.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.valor_historico.id_for_label }}" class="form-label">
+                                {{ form.valor_historico.label }}
+                            </label>
+                            {{ form.valor_historico }}
+                            {% if form.valor_historico.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.valor_historico.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.origen.id_for_label }}" class="form-label">
+                                {{ form.origen.label }} *
+                            </label>
+                            {{ form.origen }}
+                            {% if form.origen.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.origen.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.acogido_isfut }}
+                            <label class="form-check-label" for="{{ form.acogido_isfut.id_for_label }}">
+                                {{ form.acogido_isfut.label }}
+                            </label>
+                            {% if form.acogido_isfut.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.acogido_isfut.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">
+                            ← Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            Siguiente → Ingreso de Montos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación cliente para secuencia
+document.addEventListener('DOMContentLoaded', function() {
+    const secuenciaInput = document.getElementById('{{ form.secuencia_evento.id_for_label }}');
+    
+    secuenciaInput.addEventListener('blur', function() {
+        if (this.value && parseInt(this.value) <= 10000) {
+            this.setCustomValidity('La secuencia debe ser mayor a 10,000');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

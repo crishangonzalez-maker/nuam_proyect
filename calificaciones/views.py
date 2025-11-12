@@ -296,3 +296,183 @@ def eliminar_calificacion(request, id_calificacion):
             messages.error(request, f'Error al eliminar: {str(e)}')
     
     return redirect('lista_calificaciones')
+
+def editar_calificacion_paso1(request, id_calificacion):
+    """Editar primer paso: Datos básicos"""
+    calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
+    
+    if request.method == 'POST':
+        form = CalificacionTributariaForm(request.POST, instance=calificacion)
+        if form.is_valid():
+            # Guardar datos en sesión para el flujo de edición
+            datos_serializables = convertir_fechas_para_sesion(form.cleaned_data)
+            request.session['edicion_calificacion'] = id_calificacion
+            request.session['calificacion_paso1'] = datos_serializables
+            return redirect('editar_calificacion_paso2', id_calificacion=id_calificacion)
+    else:
+        form = CalificacionTributariaForm(instance=calificacion)
+    
+    context = {
+        'form': form, 
+        'paso_actual': 1,
+        'calificacion': calificacion,
+        'modo_edicion': True
+    }
+    return render(request, 'calificaciones/editar_paso1.html', context)
+
+def editar_calificacion_paso2(request, id_calificacion):
+    """Editar segundo paso: Montos"""
+    calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
+    
+    # Verificar que estamos en flujo de edición
+    if request.session.get('edicion_calificacion') != id_calificacion:
+        messages.warning(request, 'Por favor complete primero los datos básicos.')
+        return redirect('editar_calificacion_paso1', id_calificacion=id_calificacion)
+    
+    datos_paso1_serializados = request.session.get('calificacion_paso1')
+    if not datos_paso1_serializados:
+        messages.warning(request, 'Por favor complete primero los datos básicos.')
+        return redirect('editar_calificacion_paso1', id_calificacion=id_calificacion)
+    
+    datos_paso1 = convertir_fechas_desde_sesion(datos_paso1_serializados)
+    
+    # En edición, normalmente los montos no se editan directamente, 
+    # pero mostramos el form para consistencia
+    if request.method == 'POST':
+        form = MontosForm(request.POST)
+        if form.is_valid():
+            # Calcular factores (similar a creación)
+            try:
+                factores = form.calcular_factores()
+            except AttributeError:
+                montos_data = form.cleaned_data
+                factores = {}
+                for key, value in montos_data.items():
+                    if key.startswith('monto') and not key.startswith('monto_base'):
+                        base_key = f'monto_base{key[5:]}'
+                        base_value = montos_data.get(base_key, Decimal('1'))
+                        if base_value and base_value != Decimal('0'):
+                            factor_key = f'factor{key[5:]}'
+                            factores[factor_key] = value / base_value
+            
+            montos_serializables = convertir_fechas_para_sesion(form.cleaned_data)
+            factores_serializables = convertir_fechas_para_sesion(factores)
+            
+            request.session['montos_paso2'] = montos_serializables
+            request.session['factores_calculados'] = factores_serializables
+            return redirect('editar_calificacion_paso3', id_calificacion=id_calificacion)
+    else:
+        # Podrías cargar montos existentes si los tienes
+        form = MontosForm()
+    
+    context = {
+        'form': form,
+        'paso_actual': 2,
+        'datos_paso1': datos_paso1,
+        'calificacion': calificacion,
+        'modo_edicion': True
+    }
+    return render(request, 'calificaciones/editar_paso2.html', context)
+
+def editar_calificacion_paso3(request, id_calificacion):
+    """Editar tercer paso: Factores"""
+    calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
+    factores_existentes = get_object_or_404(FactorCalificacion, id_calificacion=calificacion)
+    
+    # Verificar flujo de edición
+    if request.session.get('edicion_calificacion') != id_calificacion:
+        messages.warning(request, 'Por favor complete los pasos anteriores.')
+        return redirect('editar_calificacion_paso1', id_calificacion=id_calificacion)
+    
+    datos_paso1_serializados = request.session.get('calificacion_paso1')
+    factores_calculados_serializados = request.session.get('factores_calculados', {})
+    
+    if not datos_paso1_serializados:
+        messages.warning(request, 'Por favor complete los pasos anteriores.')
+        return redirect('editar_calificacion_paso1', id_calificacion=id_calificacion)
+    
+    datos_paso1 = convertir_fechas_desde_sesion(datos_paso1_serializados)
+    factores_calculados = convertir_fechas_desde_sesion(factores_calculados_serializados)
+    
+    if request.method == 'POST':
+        form = FactoresForm(request.POST, instance=factores_existentes)
+        if form.is_valid():
+            try:
+                usuario = Usuario.objects.first()
+                if not usuario:
+                    usuario = Usuario.objects.create(
+                        nombre="Usuario Sistema",
+                        correo="sistema@nuam.com",
+                        rol="Administrador",
+                        contraseña_hash=make_password("temp123"),
+                        estado=True
+                    )
+                
+                # Actualizar calificación tributaria
+                for field, value in datos_paso1.items():
+                    setattr(calificacion, field, value)
+                calificacion.save()
+                
+                # Actualizar factores
+                factores = form.save(commit=False)
+                factores.id_calificacion = calificacion
+                factores.save()
+                
+                # Log de auditoría
+                LogAuditoria.objects.create(
+                    accion='UPDATE',
+                    usuario_responsable=usuario,
+                    id_calificacion=calificacion,
+                    detalle='Edición de calificación tributaria',
+                    ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
+                )
+                
+                # Limpiar sesión
+                request.session.pop('edicion_calificacion', None)
+                request.session.pop('calificacion_paso1', None)
+                request.session.pop('montos_paso2', None)
+                request.session.pop('factores_calculados', None)
+                
+                messages.success(request, '¡Calificación tributaria actualizada exitosamente!')
+                return redirect('lista_calificaciones')
+                
+            except Exception as e:
+                messages.error(request, f'Error al actualizar: {str(e)}')
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error en editar_calificacion_paso3: {str(e)}")
+    
+    else:
+        # Usar factores existentes como initial data
+        form = FactoresForm(instance=factores_existentes)
+    
+    context = {
+        'form': form,
+        'paso_actual': 3,
+        'datos_paso1': datos_paso1,
+        'calificacion': calificacion,
+        'factores_calculados': factores_calculados,
+        'modo_edicion': True
+    }
+    return render(request, 'calificaciones/editar_paso3.html', context)
+
+def detalle_calificacion(request, id_calificacion):
+    """Vista para mostrar todos los datos de una calificación"""
+    calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
+    
+    # Obtener factores
+    try:
+        factores = FactorCalificacion.objects.get(id_calificacion=calificacion)
+    except FactorCalificacion.DoesNotExist:
+        factores = None
+        messages.warning(request, 'No se encontraron factores asociados a esta calificación.')
+    
+    # Obtener logs de auditoría relacionados - CORREGIDO: usar fecha_hora en lugar de fecha_accion
+    logs = LogAuditoria.objects.filter(id_calificacion=calificacion).order_by('-fecha_hora')
+    
+    context = {
+        'calificacion': calificacion,
+        'factores': factores,
+        'logs': logs,
+    }
+    return render(request, 'calificaciones/detalle.html', context)
