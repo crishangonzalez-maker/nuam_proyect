@@ -1,0 +1,72 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Progreso de pasos -->
+        <div class="step-progress">
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div>Datos Básicos</div>
+            </div>
+            <div class="step active">
+                <div class="step-number">2</div>
+                <div>Ingreso Montos</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Factores</div>
+            </div>
+        </div>
+
+        <!-- Resumen datos paso 1 -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Resumen Datos Básicos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Instrumento:</strong> {{ datos_paso1.instrumento }}</div>
+                    <div class="col-md-2"><strong>Ejercicio:</strong> {{ datos_paso1.ejercicio }}</div>
+                    <div class="col-md-2"><strong>Mercado:</strong> {{ datos_paso1.mercado }}</div>
+                    <div class="col-md-3"><strong>Fecha Pago:</strong> {{ datos_paso1.fecha_pago }}</div>
+                    <div class="col-md-2"><strong>Secuencia:</strong> {{ datos_paso1.secuencia_evento }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Paso 2: Ingreso de Montos</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="alert alert-info">
+                        <strong>Información:</strong> Ingrese los montos correspondientes. El sistema calculará automáticamente los factores.
+                    </div>
+
+                    {% for field in form %}
+                        <div class="mb-3">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger">{{ field.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-secondary">← Anterior</a>
+                        <button type="submit" class="btn btn-primary">Calcular Factores →</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
