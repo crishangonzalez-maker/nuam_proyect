@@ -1,0 +1,93 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-12">
+        <!-- Progreso de pasos -->
+        <div class="step-progress">
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div>Datos Básicos</div>
+            </div>
+            <div class="step active">
+                <div class="step-number">2</div>
+                <div>Ingreso Montos</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Factores</div>
+            </div>
+        </div>
+
+        <!-- Resumen datos paso 1 - CAMBIADO: bg-light por bg-white y text-dark -->
+      <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">📋 Resumen - Datos Básicos Editados</h5>
+            </div>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Instrumento:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.instrumento }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Ejercicio:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.ejercicio }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Mercado:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.mercado }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Fecha Pago:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.fecha_pago }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Secuencia:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.secuencia_evento }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">✏️ Editar Calificación - Paso 2: Montos</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>💡 Información:</strong> Los montos se utilizan para calcular factores automáticamente.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Mismo formulario de montos que crear_paso2.html -->
+                    <div class="row">
+                        {% for field in form %}
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" class="btn btn-secondary">
+                            ← Anterior
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            Calcular Factores →
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
