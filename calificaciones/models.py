@@ -2,7 +2,9 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils import timezone
 
+# PRIMERO define UsuarioManager
 class UsuarioManager(BaseUserManager):
     def create_user(self, correo, password=None, **extra_fields):
         if not correo:
@@ -18,6 +20,7 @@ class UsuarioManager(BaseUserManager):
         extra_fields.setdefault('estado', True)
         return self.create_user(correo, password, **extra_fields)
 
+# LUEGO define Usuario
 class Usuario(AbstractBaseUser, PermissionsMixin):
     ROLES = [
         ('Administrador', 'Administrador'),
@@ -32,11 +35,21 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     estado = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    
+    # NUEVOS CAMPOS PARA SOFT DELETE
+    fecha_eliminacion = models.DateTimeField(null=True, blank=True)
+    eliminado_por = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='usuarios_eliminados'
+    )
 
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     
-    objects = UsuarioManager()
+    objects = UsuarioManager()  # Ahora UsuarioManager está definido
     
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
@@ -49,8 +62,19 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.nombre} ({self.rol})"
     
-
+    def soft_delete(self, usuario_eliminador):
+        """Marca el usuario como eliminado en lugar de borrarlo físicamente"""
+        self.estado = False
+        self.fecha_eliminacion = timezone.now()
+        self.eliminado_por = usuario_eliminador
+        self.save()
     
+    @property
+    def esta_activo(self):
+        """Propiedad para compatibilidad con el sistema de autenticación de Django"""
+        return self.estado
+
+# LUEGO los demás modelos...
 class ArchivoCarga(models.Model):
     """Modelo ARCHIVO_CARGA según estructura PostgreSQL"""
     TIPO_ARCHIVO_OPCIONES = [

@@ -21,12 +21,36 @@
                     
                     <div class="mb-3">
                         <label for="id_username" class="form-label">Correo Electrónico</label>
-                        {{ form.username }}
+                        <input type="email" 
+                               name="username" 
+                               id="id_username" 
+                               class="form-control" 
+                               placeholder="tu.correo@empresa.com"
+                               required
+                               style="color: #ffffff; background-color: #2a2a2a; border: 1px solid #444;">
+                        <style>
+                            #id_username::placeholder {
+                                color: #888888 !important;
+                                opacity: 1;
+                            }
+                        </style>
                     </div>
                     
                     <div class="mb-3">
                         <label for="id_password" class="form-label">Contraseña</label>
-                        {{ form.password }}
+                        <input type="password" 
+                               name="password" 
+                               id="id_password" 
+                               class="form-control" 
+                               placeholder="Ingresa tu contraseña"
+                               required
+                               style="color: #ffffff; background-color: #2a2a2a; border: 1px solid #444;">
+                        <style>
+                            #id_password::placeholder {
+                                color: #888888 !important;
+                                opacity: 1;
+                            }
+                        </style>
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100">Ingresar</button>
@@ -35,4 +59,68 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos generales para los campos del formulario */
+.form-control {
+    color: #ffffff !important;
+    background-color: #2a2a2a !important;
+    border: 1px solid #444 !important;
+    padding: 12px 15px;
+    border-radius: 5px;
+}
+
+.form-control:focus {
+    border-color: #ff4201 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 66, 1, 0.25) !important;
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* Placeholders en gris */
+.form-control::placeholder {
+    color: #888888 !important;
+    opacity: 1;
+}
+
+/* Labels en blanco */
+.form-label {
+    color: #ffffff !important;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* Botón de ingreso */
+.btn-primary {
+    background-color: #ff4201;
+    border-color: #ff4201;
+    color: #000000;
+    font-weight: bold;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.btn-primary:hover {
+    background-color: #e03a01;
+    border-color: #e03a01;
+    color: #000000;
+}
+
+/* Card styling */
+.card {
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+}
+
+.card-header {
+    background-color: #ff4201 !important;
+    color: #000000 !important;
+    border-bottom: 1px solid #333;
+}
+
+.card-body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+</style>
 {% endblock %}

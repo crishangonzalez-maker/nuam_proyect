@@ -4,70 +4,310 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-10">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header bg-primary text-white">
                 <h4 class="mb-0">👤 Mi Perfil</h4>
             </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5>Información Personal</h5>
-                        <p><strong>Nombre:</strong> {{ user.nombre }}</p>
-                        <p><strong>Correo:</strong> {{ user.email }}</p>
-                        <p><strong>Rol:</strong> {{ user.rol }}</p>
-                        <p><strong>Estado:</strong> 
-                            <span class="badge bg-{% if user.estado %}success{% else %}danger{% endif %}">
-                                {{ user.estado|yesno:"Activo,Inactivo" }}
-                            </span>
-                        </p>
-                        <p><strong>Fecha de creación:</strong> {{ user.fecha_creacion|date:"d/m/Y H:i" }}</p>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                
+                <!-- Información Personal -->
+                <div class="row mb-5">
+                    <div class="col-md-8">
+                        <h5 class="mb-4" style="color: #ff4201; border-bottom: 2px solid #ff4201; padding-bottom: 10px;">
+                            📝 Información Personal
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="profile-info-item">
+                                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Nombre Completo</strong>
+                                    <span style="color: #ffffff !important; font-size: 1.1rem;">{{ user.nombre }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="profile-info-item">
+                                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Correo Electrónico</strong>
+                                    <span style="color: #ffffff !important; font-size: 1.1rem;">{{ user.correo }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="profile-info-item">
+                                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Rol</strong>
+                                    <span class="badge bg-info" style="color: #000000 !important; font-size: 0.9rem;">
+                                        {{ user.rol }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="profile-info-item">
+                                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Estado</strong>
+                                    <span class="badge bg-{% if user.estado %}success{% else %}danger{% endif %}" 
+                                          style="color: #ffffff !important; font-size: 0.9rem;">
+                                        {{ user.estado|yesno:"Activo,Inactivo" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="profile-info-item">
+                                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Fecha de Creación</strong>
+                                    <span style="color: #cccccc !important;">{{ user.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="profile-avatar mb-3">
+                                <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #ff4201, #ff6b35); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 4px solid #333;">
+                                    <span style="color: #000000; font-size: 2.5rem; font-weight: bold;">
+                                        {{ user.nombre|first|upper }}
+                                    </span>
+                                </div>
+                            </div>
+                            <h6 style="color: #ff4201;">{{ user.rol }}</h6>
+                            <p style="color: #cccccc; font-size: 0.9rem;">Miembro desde {{ user.fecha_creacion|date:"M Y" }}</p>
+                        </div>
                     </div>
                 </div>
 
-                <h5>Cambiar Contraseña</h5>
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        <strong>Error:</strong> Por favor corrige los errores below.
-                        {{ form.errors }}
+                <!-- Separador -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <hr style="border-color: #444; margin: 30px 0;">
                     </div>
-                    {% endif %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="id_old_password" class="form-label">Contraseña Actual</label>
-                                {{ form.old_password }}
-                            </div>
-                            <div class="mb-3">
-                                <label for="id_new_password1" class="form-label">Nueva Contraseña</label>
-                                {{ form.new_password1 }}
-                            </div>
-                            <div class="mb-3">
-                                <label for="id_new_password2" class="form-label">Confirmar Nueva Contraseña</label>
-                                {{ form.new_password2 }}
-                            </div>
-                            <button type="submit" class="btn btn-primary">🔄 Actualizar Contraseña</button>
-                            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">← Volver al Inicio</a>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="alert alert-info">
-                                <h6>📝 Requisitos de contraseña:</h6>
-                                <ul class="small mb-0">
-                                    <li>No puede ser similar a tu información personal</li>
-                                    <li>Debe contener al menos 8 caracteres</li>
-                                    <li>No puede ser una contraseña común</li>
-                                    <li>No puede ser entirely numérica</li>
+                </div>
+
+                <!-- Cambio de Contraseña -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <h5 class="mb-4" style="color: #ff4201; border-bottom: 2px solid #ff4201; padding-bottom: 10px;">
+                            🔒 Cambiar Contraseña
+                        </h5>
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            {% if form.errors %}
+                            <div class="alert alert-danger mb-4">
+                                <strong>Error:</strong> Por favor corrige los siguientes errores:
+                                <ul class="mb-0 mt-2">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
                                 </ul>
                             </div>
-                        </div>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_old_password" class="form-label" style="color: #ffffff !important;">
+                                            Contraseña Actual
+                                        </label>
+                                        <input type="password" 
+                                               name="old_password" 
+                                               id="id_old_password" 
+                                               class="form-control password-field"
+                                               placeholder="Ingresa tu contraseña actual"
+                                               required
+                                               style="color: #ffffff; background-color: #2a2a2a; border: 1px solid #444;">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="id_new_password1" class="form-label" style="color: #ffffff !important;">
+                                            Nueva Contraseña
+                                        </label>
+                                        <input type="password" 
+                                               name="new_password1" 
+                                               id="id_new_password1" 
+                                               class="form-control password-field"
+                                               placeholder="Ingresa nueva contraseña"
+                                               required
+                                               style="color: #ffffff; background-color: #2a2a2a; border: 1px solid #444;">
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label for="id_new_password2" class="form-label" style="color: #ffffff !important;">
+                                            Confirmar Nueva Contraseña
+                                        </label>
+                                        <input type="password" 
+                                               name="new_password2" 
+                                               id="id_new_password2" 
+                                               class="form-control password-field"
+                                               placeholder="Confirma nueva contraseña"
+                                               required
+                                               style="color: #ffffff; background-color: #2a2a2a; border: 1px solid #444;">
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            🔄 Actualizar Contraseña
+                                        </button>
+                                        <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">
+                                            ← Volver al Inicio
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="alert alert-info" style="background-color: #2a2a2a; border: 1px solid #444; color: #ffffff;">
+                                        <h6 style="color: #ff4201; margin-bottom: 15px;">📝 Requisitos de contraseña:</h6>
+                                        <ul class="mb-0" style="padding-left: 20px;">
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser similar a tu información personal</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">Debe contener al menos 8 caracteres</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser una contraseña común</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser completamente numérica</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">Recomendado: usar mayúsculas, minúsculas, números y símbolos</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos para el perfil */
+.profile-info-item {
+    padding: 12px 15px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ff4201;
+}
+
+.password-field {
+    color: #ffffff !important;
+    background-color: #2a2a2a !important;
+    border: 1px solid #444 !important;
+    padding: 12px 15px;
+    border-radius: 5px;
+}
+
+.password-field:focus {
+    border-color: #ff4201 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 66, 1, 0.25) !important;
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+.password-field::placeholder {
+    color: #888888 !important;
+    opacity: 1;
+}
+
+.form-label {
+    color: #ffffff !important;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* Botones */
+.btn-primary {
+    background-color: #ff4201;
+    border-color: #ff4201;
+    color: #000000;
+    font-weight: bold;
+    padding: 12px 24px;
+}
+
+.btn-primary:hover {
+    background-color: #e03a01;
+    border-color: #e03a01;
+    color: #000000;
+}
+
+.btn-secondary {
+    background-color: #666666;
+    border-color: #666666;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 12px 24px;
+}
+
+.btn-secondary:hover {
+    background-color: #555555;
+    border-color: #555555;
+    color: #ffffff;
+}
+
+/* Alertas */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 20px;
+}
+
+.alert-danger {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.alert-info {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-avatar {
+        margin-bottom: 30px;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+</style>
+
+<script>
+// JavaScript para mejorar la experiencia de usuario
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar placeholders si no están presentes
+    const passwordFields = document.querySelectorAll('.password-field');
+    const placeholders = [
+        'Ingresa tu contraseña actual',
+        'Ingresa nueva contraseña', 
+        'Confirma nueva contraseña'
+    ];
+    
+    passwordFields.forEach((field, index) => {
+        if (!field.getAttribute('placeholder')) {
+            field.setAttribute('placeholder', placeholders[index]);
+        }
+    });
+    
+    // Mostrar/ocultar contraseñas (opcional)
+    const togglePassword = document.createElement('button');
+    togglePassword.type = 'button';
+    togglePassword.innerHTML = '👁️';
+    togglePassword.style.background = 'none';
+    togglePassword.style.border = 'none';
+    togglePassword.style.color = '#ff4201';
+    togglePassword.style.cursor = 'pointer';
+    togglePassword.style.marginLeft = '10px';
+    
+    // Puedes agregar funcionalidad para mostrar/ocultar contraseña aquí
+});
+</script>
 {% endblock %}

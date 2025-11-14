@@ -51,9 +51,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{% if usuario.estado %}success{% else %}danger{% endif %}">
-                                            {{ usuario.estado|yesno:"Activo,Inactivo" }}
-                                        </span>
+                                        <span class="badge bg-success">Activo</span>
                                     </td>
                                     <td>{{ usuario.fecha_creacion|date:"d/m/Y H:i" }}</td>
                                     <td>
@@ -62,7 +60,7 @@
                                                 ✏️ Editar
                                             </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ usuario.id }}">
-                                                🗑️ Eliminar
+                                                🗑️ Desactivar
                                             </button>
                                         </div>
                                     </td>
@@ -70,7 +68,7 @@
                                 {% empty %}
                                 <tr>
                                     <td colspan="6" class="text-center text-muted py-4">
-                                        No hay usuarios registrados
+                                        No hay usuarios activos
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -96,18 +94,23 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <h5 class="modal-title">Confirmar Desactivación</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro de que quieres eliminar al usuario <strong>{{ usuario.nombre }}</strong>?</p>
-                <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
+                <p>¿Estás seguro de que quieres <strong>desactivar</strong> al usuario <strong>{{ usuario.nombre }}</strong>?</p>
+                <p class="text-warning">
+                    <small>
+                        El usuario será desactivado y no podrá acceder al sistema, 
+                        pero sus registros históricos se mantendrán.
+                    </small>
+                </p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form action="{% url 'eliminar_usuario' usuario.id %}" method="post">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                    <button type="submit" class="btn btn-warning">Desactivar</button>
                 </form>
             </div>
         </div>

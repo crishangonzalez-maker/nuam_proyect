@@ -20,7 +20,7 @@ from django.views.decorators.csrf import csrf_protect
 @login_required
 @administrador_required
 def eliminar_usuario(request, usuario_id):
-    """Eliminar usuario existente"""
+    """Eliminar usuario existente usando soft delete"""
     if request.method == 'POST':
         try:
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -31,15 +31,19 @@ def eliminar_usuario(request, usuario_id):
                 return redirect('gestion_usuarios')
             
             nombre_usuario = usuario.nombre
-            usuario.delete()
-            messages.success(request, f'Usuario "{nombre_usuario}" eliminado correctamente.')
+            
+            # Usar soft delete en lugar de eliminar físicamente
+            usuario.soft_delete(request.user)
+            
+            messages.success(request, f'Usuario "{nombre_usuario}" desactivado correctamente.')
             
         except Exception as e:
             messages.error(request, f'Error al eliminar el usuario: {str(e)}')
 
-        
         return redirect('gestion_usuarios')
     
+    # Si no es POST, redirigir a la gestión de usuarios
+    return redirect('gestion_usuarios')
     # Si no es POST, redirigir a la gestión de usuarios
     return redirect('gestion_usuarios')
 
@@ -241,20 +245,13 @@ def crear_calificacion_paso3(request):
                     )
                     return redirect('crear_calificacion_paso1')
                 
-                # Obtener usuario
-                usuario = Usuario.objects.first()
-                if not usuario:
-                    usuario = Usuario.objects.create(
-                        nombre="Usuario Sistema",
-                        correo="sistema@nuam.com",
-                        rol="Administrador",
-                        contraseña_hash=make_password("temp123"),
-                        estado=True
-                    )
+                # CORRECCIÓN: Usar request.user directamente (que ya es una instancia de Usuario)
+                # en lugar de request.user.id
+                usuario_creador = request.user
                 
                 # Crear calificación tributaria
                 calificacion = CalificacionTributaria(
-                    usuario_creador=request.user.id,
+                    usuario_creador=usuario_creador,  # CORREGIDO: instancia, no ID
                     **datos_paso1
                 )
                 calificacion.save()
@@ -271,10 +268,10 @@ def crear_calificacion_paso3(request):
                 )
                 factores.save()
                 
-                # Crear log de auditoría
+                # CORRECCIÓN: Usar request.user también para el log de auditoría
                 LogAuditoria.objects.create(
                     accion='CREATE',
-                    usuario_responsable=usuario,
+                    usuario_responsable=request.user,  # CORREGIDO: usar request.user
                     id_calificacion=calificacion,
                     detalle='Creación manual de calificación tributaria',
                     ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
@@ -310,6 +307,7 @@ def crear_calificacion_paso3(request):
     }
     return render(request, 'calificaciones/crear_paso3.html', context)
 
+
 @login_required
 @administrador_required
 def eliminar_calificacion(request, id_calificacion):
@@ -318,23 +316,14 @@ def eliminar_calificacion(request, id_calificacion):
     
     if request.method == 'POST':
         try:
-            usuario = Usuario.objects.first()
-            if not usuario:
-                usuario = Usuario.objects.create(
-                    nombre="Usuario Sistema",
-                    correo="sistema@nuam.com",
-                    rol="Administrador",
-                    contraseña_hash=make_password("temp123"),
-                    estado=True
-                )
-                
+            # CORRECCIÓN: Usar request.user directamente
             calificacion.estado = False
             calificacion.save()
             
             # Log de eliminación
             LogAuditoria.objects.create(
                 accion='DELETE',
-                usuario_responsable=usuario,
+                usuario_responsable=request.user,  # CORREGIDO
                 id_calificacion=calificacion,
                 detalle='Eliminación de calificación tributaria',
                 ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
@@ -453,15 +442,7 @@ def editar_calificacion_paso3(request, id_calificacion):
         form = FactoresForm(request.POST, instance=factores_existentes)
         if form.is_valid():
             try:
-                usuario = Usuario.objects.first()
-                if not usuario:
-                    usuario = Usuario.objects.create(
-                        nombre="Usuario Sistema",
-                        correo="sistema@nuam.com",
-                        rol="Administrador",
-                        contraseña_hash=make_password("temp123"),
-                        estado=True
-                    )
+                # CORRECCIÓN: Usar request.user directamente
                 
                 # Actualizar calificación tributaria
                 for field, value in datos_paso1.items():
@@ -476,7 +457,7 @@ def editar_calificacion_paso3(request, id_calificacion):
                 # Log de auditoría
                 LogAuditoria.objects.create(
                     accion='UPDATE',
-                    usuario_responsable=usuario,
+                    usuario_responsable=request.user,  # CORREGIDO
                     id_calificacion=calificacion,
                     detalle='Edición de calificación tributaria',
                     ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
@@ -593,7 +574,7 @@ def perfil_usuario(request):
 @administrador_required
 def gestion_usuarios(request):
     """Vista solo para administradores - gestión de usuarios"""
-    usuarios = Usuario.objects.all()
+    usuarios = Usuario.objects.filter(estado=True)  # Solo usuarios activos
     return render(request, 'calificaciones/gestion_usuarios.html', {'usuarios': usuarios})
 
 @login_required
