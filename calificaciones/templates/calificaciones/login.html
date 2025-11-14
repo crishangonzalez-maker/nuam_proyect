@@ -1,0 +1,38 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block title %}Iniciar Sesión - NUAM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">🔐 Iniciar Sesión</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        Correo o contraseña incorrectos. Por favor intenta nuevamente.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Correo Electrónico</label>
+                        {{ form.username }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Contraseña</label>
+                        {{ form.password }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

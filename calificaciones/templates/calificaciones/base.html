@@ -35,6 +35,22 @@
         .step.completed .step-number {
             background-color: #198754;
         }
+        .user-info {
+            color: white;
+            margin-right: 15px;
+        }
+        .logout-form {
+            display: inline;
+        }
+        .logout-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,.55);
+            padding: 0;
+        }
+        .logout-btn:hover {
+            color: rgba(255,255,255,.75);
+        }
     </style>
 </head>
 <body>
@@ -44,10 +60,62 @@
             <a class="navbar-brand" href="{% url 'lista_calificaciones' %}">
                 NUAM - Calificaciones Tributarias
             </a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="{% url 'lista_calificaciones' %}">Inicio</a>
-                <a class="nav-link" href="{% url 'crear_calificacion_paso1' %}">Nueva Calificación</a>
-                <a class="nav-link" href="/admin/">Administración</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'lista_calificaciones' %}">Inicio</a>
+                    </li>
+                    {% if user.is_authenticated and user.rol in 'Administrador,Analista' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'crear_calificacion_paso1' %}">Nueva Calificación</a>
+                    </li>
+                    {% endif %}
+                    {% if user.is_authenticated and user.rol == 'Administrador' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'gestion_usuarios' %}">Gestión de Usuarios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">Administración</a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Información del usuario y login/logout -->
+                <div class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <span class="user-info nav-link">
+                            👋 Hola, <strong>{{ user.nombre }}</strong> ({{ user.rol }})
+                        </span>
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                ⚙️
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'perfil_usuario' %}">
+                                        👤 Mi Perfil
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="logout-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item text-danger logout-btn">
+                                            🚪 Cerrar Sesión
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a class="nav-link" href="{% url 'login' %}">🔐 Iniciar Sesión</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>

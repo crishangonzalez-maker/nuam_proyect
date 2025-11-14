@@ -1,32 +1,56 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
-class Usuario(models.Model):
-    """Modelo USUARIO según estructura PostgreSQL"""
-    ROL_OPCIONES = [
+class UsuarioManager(BaseUserManager):
+    def create_user(self, correo, password=None, **extra_fields):
+        if not correo:
+            raise ValueError('El correo es obligatorio')
+        correo = self.normalize_email(correo)
+        user = self.model(correo=correo, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, correo, password=None, **extra_fields):
+        extra_fields.setdefault('rol', 'Administrador')
+        extra_fields.setdefault('estado', True)
+        return self.create_user(correo, password, **extra_fields)
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    ROLES = [
         ('Administrador', 'Administrador'),
-        ('Analista', 'Analista'),
         ('Corredor', 'Corredor'),
         ('Auditor', 'Auditor'),
+        ('Analista', 'Analista'),
     ]
     
     nombre = models.CharField(max_length=100)
-    correo = models.EmailField(max_length=150, unique=True)
-    rol = models.CharField(max_length=20, choices=ROL_OPCIONES)
-    contraseña_hash = models.CharField(max_length=255)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    correo = models.EmailField(unique=True)
+    rol = models.CharField(max_length=20, choices=ROLES, default='Analista')
     estado = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
+    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    
+    objects = UsuarioManager()
+    
+    USERNAME_FIELD = 'correo'
+    REQUIRED_FIELDS = ['nombre']
+    
     class Meta:
         db_table = 'USUARIO'
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
-
+    
     def __str__(self):
         return f"{self.nombre} ({self.rol})"
+    
 
+    
 class ArchivoCarga(models.Model):
     """Modelo ARCHIVO_CARGA según estructura PostgreSQL"""
     TIPO_ARCHIVO_OPCIONES = [

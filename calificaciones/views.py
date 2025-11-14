@@ -9,6 +9,39 @@ from decimal import Decimal
 from django.contrib.auth.hashers import make_password
 import json
 from datetime import date, datetime
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from .decorators import administrador_required, corredor_required, auditor_required, analista_required
+from .forms import LoginForm, UsuarioForm
+from django.views.decorators.csrf import csrf_protect
+
+@login_required
+@administrador_required
+def eliminar_usuario(request, usuario_id):
+    """Eliminar usuario existente"""
+    if request.method == 'POST':
+        try:
+            usuario = get_object_or_404(Usuario, id=usuario_id)
+            
+            # Prevenir que el usuario se elimine a sí mismo
+            if request.user.id == usuario.id:
+                messages.error(request, 'No puedes eliminar tu propio usuario.')
+                return redirect('gestion_usuarios')
+            
+            nombre_usuario = usuario.nombre
+            usuario.delete()
+            messages.success(request, f'Usuario "{nombre_usuario}" eliminado correctamente.')
+            
+        except Exception as e:
+            messages.error(request, f'Error al eliminar el usuario: {str(e)}')
+
+        
+        return redirect('gestion_usuarios')
+    
+    # Si no es POST, redirigir a la gestión de usuarios
+    return redirect('gestion_usuarios')
 
 class DateTimeEncoder(json.JSONEncoder):
     """Encoder personalizado para manejar fechas en JSON"""
@@ -47,11 +80,19 @@ def convertir_fechas_desde_sesion(datos):
             datos_convertidos[key] = value
     return datos_convertidos
 
+# 🔐 AQUÍ FALTABAN LOS DECORADORES - AHORA CORREGIDO:
+
+@login_required
 def lista_calificaciones(request):
     """Vista principal del mantenedor con filtros"""
-    calificaciones = CalificacionTributaria.objects.filter(estado=True)
+    usuario_rol = request.user.rol
+    if usuario_rol == "Administrador":
+        calificaciones = CalificacionTributaria.objects.filter(estado=True)
+    if usuario_rol == "Auditor":
+        calificaciones = CalificacionTributaria.objects.filter(estado=True,usuario_creador_id=request.user.id)
+
     form_filtro = FiltroCalificacionesForm(request.GET or None)
-    
+    print(request.user.rol)
     if form_filtro.is_valid():
         ejercicio = form_filtro.cleaned_data.get('ejercicio')
         mercado = form_filtro.cleaned_data.get('mercado')
@@ -73,6 +114,8 @@ def lista_calificaciones(request):
     }
     return render(request, 'calificaciones/lista.html', context)
 
+@login_required
+@analista_required
 def crear_calificacion_paso1(request):
     """Primer paso: Ingreso de datos básicos"""
     # Crear usuario por defecto si no existe
@@ -100,6 +143,8 @@ def crear_calificacion_paso1(request):
     context = {'form': form, 'paso_actual': 1}
     return render(request, 'calificaciones/crear_paso1.html', context)
 
+@login_required
+@analista_required
 def crear_calificacion_paso2(request):
     """Segundo paso: Ingreso de montos"""
     # Verificar que vengamos del paso 1
@@ -154,6 +199,8 @@ def crear_calificacion_paso2(request):
     }
     return render(request, 'calificaciones/crear_paso2.html', context)
 
+@login_required
+@analista_required
 def crear_calificacion_paso3(request):
     """Tercer paso: Revisión y confirmación de factores"""
     datos_paso1_serializados = request.session.get('calificacion_paso1')
@@ -207,7 +254,7 @@ def crear_calificacion_paso3(request):
                 
                 # Crear calificación tributaria
                 calificacion = CalificacionTributaria(
-                    usuario_creador=usuario,
+                    usuario_creador=request.user.id,
                     **datos_paso1
                 )
                 calificacion.save()
@@ -263,6 +310,8 @@ def crear_calificacion_paso3(request):
     }
     return render(request, 'calificaciones/crear_paso3.html', context)
 
+@login_required
+@administrador_required
 def eliminar_calificacion(request, id_calificacion):
     """Eliminar calificación (marcar como inactiva)"""
     calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
@@ -297,6 +346,8 @@ def eliminar_calificacion(request, id_calificacion):
     
     return redirect('lista_calificaciones')
 
+@login_required
+@analista_required
 def editar_calificacion_paso1(request, id_calificacion):
     """Editar primer paso: Datos básicos"""
     calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
@@ -320,6 +371,8 @@ def editar_calificacion_paso1(request, id_calificacion):
     }
     return render(request, 'calificaciones/editar_paso1.html', context)
 
+@login_required
+@analista_required
 def editar_calificacion_paso2(request, id_calificacion):
     """Editar segundo paso: Montos"""
     calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
@@ -374,6 +427,8 @@ def editar_calificacion_paso2(request, id_calificacion):
     }
     return render(request, 'calificaciones/editar_paso2.html', context)
 
+@login_required
+@analista_required
 def editar_calificacion_paso3(request, id_calificacion):
     """Editar tercer paso: Factores"""
     calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
@@ -456,6 +511,8 @@ def editar_calificacion_paso3(request, id_calificacion):
     }
     return render(request, 'calificaciones/editar_paso3.html', context)
 
+@login_required
+@auditor_required
 def detalle_calificacion(request, id_calificacion):
     """Vista para mostrar todos los datos de una calificación"""
     calificacion = get_object_or_404(CalificacionTributaria, id_calificacion=id_calificacion)
@@ -476,3 +533,97 @@ def detalle_calificacion(request, id_calificacion):
         'logs': logs,
     }
     return render(request, 'calificaciones/detalle.html', context)
+
+
+def login_view(request):
+    """Vista de login personalizada"""
+    if request.user.is_authenticated:
+        return redirect('lista_calificaciones')
+    
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            correo = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=correo, password=password)
+            
+            if user is not None and user.estado:
+                login(request, user)
+                messages.success(request, f'¡Bienvenido {user.nombre}!')
+                
+                # Redirección según rol
+                next_url = request.GET.get('next', 'lista_calificaciones')
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Credenciales inválidas o usuario inactivo')
+    else:
+        form = LoginForm()
+    
+    return render(request, 'calificaciones/login.html', {'form': form})
+
+@csrf_protect
+def logout_view(request):
+    """Vista de logout"""
+    if request.method == 'POST':
+        logout(request)
+        messages.info(request, 'Has cerrado sesión exitosamente.')
+        return redirect('login')
+    else:
+        # Si acceden por GET, también procesar el logout
+        logout(request)
+        messages.info(request, 'Has cerrado sesión exitosamente.')
+        return redirect('login')
+
+@login_required
+def perfil_usuario(request):
+    """Vista para que los usuarios vean y editen su perfil"""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Tu contraseña fue actualizada exitosamente!')
+            return redirect('perfil_usuario')
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    return render(request, 'calificaciones/perfil.html', {'form': form})
+
+@login_required
+@administrador_required
+def gestion_usuarios(request):
+    """Vista solo para administradores - gestión de usuarios"""
+    usuarios = Usuario.objects.all()
+    return render(request, 'calificaciones/gestion_usuarios.html', {'usuarios': usuarios})
+
+@login_required
+@administrador_required
+def crear_usuario(request):
+    """Crear nuevo usuario (solo administradores)"""
+    if request.method == 'POST':
+        form = UsuarioForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            messages.success(request, f'Usuario {usuario.nombre} creado exitosamente')
+            return redirect('gestion_usuarios')
+    else:
+        form = UsuarioForm()
+    
+    return render(request, 'calificaciones/crear_usuario.html', {'form': form})
+
+@login_required
+@auditor_required
+def editar_usuario(request, user_id):
+    """Editar usuario existente"""
+    usuario = get_object_or_404(Usuario, id=user_id)
+    
+    if request.method == 'POST':
+        form = UsuarioForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Usuario {usuario.nombre} actualizado exitosamente')
+            return redirect('gestion_usuarios')
+    else:
+        form = UsuarioForm(instance=usuario)
+    
+    return render(request, 'calificaciones/editar_usuario.html', {'form': form, 'usuario': usuario})

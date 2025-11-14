@@ -1,6 +1,9 @@
 from django import forms
 from .models import CalificacionTributaria, Usuario, FactorCalificacion
 from decimal import Decimal
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+from .models import Usuario
 
 class CalificacionTributariaForm(forms.ModelForm):
     """Formulario para ingreso manual de calificaciones tributarias"""
@@ -290,3 +293,46 @@ class FiltroCalificacionesForm(forms.Form):
             'placeholder': 'Buscar instrumento...'
         })
     )
+
+
+
+class LoginForm(AuthenticationForm):
+    username = forms.EmailField(
+        label='Correo Electrónico',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'tu.correo@empresa.com'
+        })
+    )
+    password = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ingresa tu contraseña'
+        })
+    )
+
+class UsuarioForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+    
+    class Meta:
+        model = Usuario
+        fields = ['nombre', 'correo', 'rol', 'estado']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'correo': forms.EmailInput(attrs={'class': 'form-control'}),
+            'rol': forms.Select(attrs={'class': 'form-control'}),
+            'estado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+        return user

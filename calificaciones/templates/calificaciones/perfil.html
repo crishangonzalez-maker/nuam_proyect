@@ -1,0 +1,73 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block title %}Mi Perfil - NUAM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">👤 Mi Perfil</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Información Personal</h5>
+                        <p><strong>Nombre:</strong> {{ user.nombre }}</p>
+                        <p><strong>Correo:</strong> {{ user.email }}</p>
+                        <p><strong>Rol:</strong> {{ user.rol }}</p>
+                        <p><strong>Estado:</strong> 
+                            <span class="badge bg-{% if user.estado %}success{% else %}danger{% endif %}">
+                                {{ user.estado|yesno:"Activo,Inactivo" }}
+                            </span>
+                        </p>
+                        <p><strong>Fecha de creación:</strong> {{ user.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+
+                <h5>Cambiar Contraseña</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> Por favor corrige los errores below.
+                        {{ form.errors }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_old_password" class="form-label">Contraseña Actual</label>
+                                {{ form.old_password }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_new_password1" class="form-label">Nueva Contraseña</label>
+                                {{ form.new_password1 }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_new_password2" class="form-label">Confirmar Nueva Contraseña</label>
+                                {{ form.new_password2 }}
+                            </div>
+                            <button type="submit" class="btn btn-primary">🔄 Actualizar Contraseña</button>
+                            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">← Volver al Inicio</a>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6>📝 Requisitos de contraseña:</h6>
+                                <ul class="small mb-0">
+                                    <li>No puede ser similar a tu información personal</li>
+                                    <li>Debe contener al menos 8 caracteres</li>
+                                    <li>No puede ser una contraseña común</li>
+                                    <li>No puede ser entirely numérica</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
