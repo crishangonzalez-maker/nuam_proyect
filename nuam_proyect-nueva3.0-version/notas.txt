@@ -1,0 +1,6 @@
+PARA CREAR SUPER USUARIO CORRER
+1.FIX_SUPERUSER = python manage.py fix_superusers
+2.CREAR_SUPERUSER_CUSTOM= python manage.py crear_superuser_custom
+
+PARA AGREGAR INFO
+PYTHON POBLAR_BASE_DATOS.PY
