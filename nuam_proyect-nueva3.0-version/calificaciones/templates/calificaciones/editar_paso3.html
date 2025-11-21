@@ -1,0 +1,268 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-12">
+        <!-- Progreso de pasos -->
+        <div class="step-progress">
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div>Datos Básicos</div>
+            </div>
+            <div class="step completed">
+                <div class="step-number">✓</div>
+                <div>Ingreso Montos</div>
+            </div>
+            <div class="step active">
+                <div class="step-number">3</div>
+                <div>Factores</div>
+            </div>
+        </div>
+
+        <!-- Resumen datos - CORREGIDO -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">📋 Resumen - Datos Básicos Editados</h5>
+            </div>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Instrumento:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.instrumento }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Ejercicio:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.ejercicio }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Mercado:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.mercado }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Fecha Pago:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.fecha_pago }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Secuencia:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.secuencia_evento }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">✏️ Editar Calificación - Paso 3: Factores</h3>
+            </div>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                <!-- Mostrar errores del formulario -->
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <strong>Errores en el formulario:</strong>
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Mostrar mensajes de Django -->
+                {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" id="formFactores">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        {% for field in form %}
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label" style="color: #ffffff !important;">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text" style="color: #cccccc !important;">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small">
+                                    {% for error in field.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Validación de factores - CORREGIDO -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">Validación de Factores</h6>
+                        </div>
+                        <div class="card-body" style="background-color: #2a2a2a; color: #ffffff !important;">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <strong style="color: #ff4201;">Suma de factores del 8 al 16:</strong>
+                                    <span id="suma-factores" style="color: #ffffff !important;">0.00000000</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span id="estado-validacion" class="badge bg-danger">NO VÁLIDO</span>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 10px;">
+                                <div id="barra-progreso" class="progress-bar bg-danger" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted" style="color: #cccccc !important;">La suma debe ser menor o igual a 1.00000000</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'editar_calificacion_paso2' calificacion.id_calificacion %}" class="btn btn-secondary">
+                            ← Anterior
+                        </a>
+                        <button type="submit" class="btn btn-success" id="btnGuardar">
+                            ✅ Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para mejorar la visualización de errores */
+.alert ul {
+    margin-bottom: 0;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control.is-valid {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Estilos para los campos del formulario */
+.form-control {
+    background-color: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+.form-control:focus {
+    background-color: #2a2a2a !important;
+    border-color: #ff4201 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 66, 1, 0.25) !important;
+}
+
+/* Estilos para las cards */
+.card {
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+}
+
+.card-header {
+    border-bottom: 1px solid #333333;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const factorInputs = document.querySelectorAll('input[type="number"]');
+    const sumaElement = document.getElementById('suma-factores');
+    const estadoElement = document.getElementById('estado-validacion');
+    const barraProgreso = document.getElementById('barra-progreso');
+    const btnGuardar = document.getElementById('btnGuardar');
+    const formFactores = document.getElementById('formFactores');
+    
+    function calcularSumaFactores() {
+        let suma = 0;
+        let factoresValidos = true;
+        
+        // Factores del 8 al 16
+        for (let i = 8; i <= 16; i++) {
+            const input = document.getElementById(`id_factor${i}`);
+            if (input) {
+                const valor = parseFloat(input.value) || 0;
+                suma += valor;
+                
+                // Validar que no sea negativo
+                if (valor < 0) {
+                    factoresValidos = false;
+                    input.classList.add('is-invalid');
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            }
+        }
+        
+        // Actualizar interfaz
+        sumaElement.textContent = suma.toFixed(8);
+        const porcentaje = Math.min((suma / 1) * 100, 120);
+        barraProgreso.style.width = porcentaje + '%';
+        
+        // Actualizar estado
+        if (suma <= 1.0 && factoresValidos) {
+            estadoElement.textContent = 'VÁLIDO';
+            estadoElement.className = 'badge bg-success';
+            barraProgreso.className = 'progress-bar bg-success';
+            btnGuardar.disabled = false;
+        } else {
+            estadoElement.textContent = 'NO VÁLIDO';
+            estadoElement.className = 'badge bg-danger';
+            barraProgreso.className = 'progress-bar bg-danger';
+            btnGuardar.disabled = true;
+        }
+    }
+    
+    // Agregar event listeners a todos los inputs de factores
+    factorInputs.forEach(input => {
+        input.addEventListener('input', calcularSumaFactores);
+        input.addEventListener('change', calcularSumaFactores);
+    });
+    
+    // Validación antes de enviar el formulario
+    formFactores.addEventListener('submit', function(e) {
+        calcularSumaFactores();
+        
+        const estado = estadoElement.textContent;
+        if (estado === 'NO VÁLIDO') {
+            e.preventDefault();
+            alert('Por favor corrige los errores en los factores antes de guardar. La suma de los factores 8-16 debe ser ≤ 1.00000000 y no pueden ser negativos.');
+            return false;
+        }
+        
+        // Mostrar loading en el botón
+        btnGuardar.innerHTML = '⏳ Guardando...';
+        btnGuardar.disabled = true;
+    });
+    
+    // Calcular inicialmente
+    calcularSumaFactores();
+    
+    // Debug: mostrar información del formulario
+    console.log('Formulario de factores cargado');
+    console.log('Campos del formulario:', factorInputs.length);
+    console.log('ID Calificación:', '{{ calificacion.id_calificacion }}');
+});
+</script>
+{% endblock %}
