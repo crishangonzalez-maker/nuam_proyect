@@ -90,12 +90,12 @@ WSGI_APPLICATION = 'nuam_project.wsgi.application'
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',                    
-        'USER': 'postgres',                  
-        'PASSWORD': env('PASSWORD'),          
-        'HOST': 'localhost',                  
-        'PORT': '5432',                       
+        'ENGINE': 'django.db.backends.oracle',
+        'NAME': 'XE',
+        'USER' : "system",
+        'PASSWORD' : env("PASSWORD"), #IMPORTANTE
+        'HOST' : "localhost",
+        'PORT' : 1521
     }
 }
 
