@@ -8,6 +8,11 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
     
+    # MFA URLs
+    path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
+    path('mfa/verify/', views.mfa_verify, name='mfa_verify'),
+    path('mfa/disable/', views.mfa_disable, name='mfa_disable'),
+    
     # Gestión de usuarios (solo admin)
     path('usuarios/', views.gestion_usuarios, name='gestion_usuarios'),
     path('usuarios/crear/', views.crear_usuario, name='crear_usuario'),
@@ -33,4 +38,5 @@ urlpatterns = [
     
     # Eliminación (solo Admin)
     path('eliminar/<int:id_calificacion>/', views.eliminar_calificacion, name='eliminar_calificacion'),
+    path('carga-masiva/', views.carga_masiva, name='carga_masiva'),
 ]

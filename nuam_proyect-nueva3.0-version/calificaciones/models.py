@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 # PRIMERO define UsuarioManager
 class UsuarioManager(BaseUserManager):
@@ -38,10 +39,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     
-    # CAMPOS REQUERIDOS PARA DJANGO ADMIN
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    
     # NUEVOS CAMPOS PARA SOFT DELETE
     fecha_eliminacion = models.DateTimeField(null=True, blank=True)
     eliminado_por = models.ForeignKey(
@@ -52,10 +49,39 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         related_name='usuarios_eliminados'
     )
 
-    objects = UsuarioManager()
+    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    
+    objects = UsuarioManager()  # Ahora UsuarioManager está definido
     
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
+
+    def has_mfa_enabled(self):
+        """Verifica si el usuario tiene MFA configurado"""
+        return TOTPDevice.objects.filter(user=self, confirmed=True).exists()
+    
+    def get_mfa_device(self):
+        """Obtiene el dispositivo MFA del usuario"""
+        try:
+            return TOTPDevice.objects.get(user=self, confirmed=True)
+        except TOTPDevice.DoesNotExist:
+            return None
+    
+    def setup_mfa(self):
+        """Configura MFA para el usuario"""
+        device, created = TOTPDevice.objects.get_or_create(
+            user=self, 
+            name='default',
+            defaults={'confirmed': False}
+        )
+        return device
+    
+    def has_perm(self, perm, obj=None):
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        return self.is_superuser
     
     class Meta:
         db_table = 'USUARIO'
@@ -68,21 +94,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def soft_delete(self, usuario_eliminador):
         """Marca el usuario como eliminado en lugar de borrarlo físicamente"""
         self.estado = False
-        self.is_active = False
         self.fecha_eliminacion = timezone.now()
         self.eliminado_por = usuario_eliminador
         self.save()
     
-    # MÉTODOS REQUERIDOS PARA DJANGO ADMIN
-    def has_perm(self, perm, obj=None):
-        return self.is_staff
-
-    def has_module_perms(self, app_label):
-        return self.is_staff
-
     @property
     def esta_activo(self):
-        return self.estado and self.is_active
+        """Propiedad para compatibilidad con el sistema de autenticación de Django"""
+        return self.estado
 
 # LUEGO los demás modelos...
 class ArchivoCarga(models.Model):
@@ -250,7 +269,6 @@ class FactorCalificacion(models.Model):
             )
 
 class LogAuditoria(models.Model):
-    """Modelo LOG_AUDITORIA según estructura PostgreSQL"""
     ACCION_OPCIONES = [
         ('CREATE', 'Crear'),
         ('UPDATE', 'Actualizar'),
@@ -258,6 +276,8 @@ class LogAuditoria(models.Model):
         ('LOGIN', 'Inicio de Sesión'),
         ('CARGA_MASIVA', 'Carga Masiva'),
         ('LOGOUT', 'Cierre de Sesión'),
+        ('MFA_SETUP', 'Configuración MFA'),  # NUEVO
+        ('MFA_DISABLE', 'Desactivación MFA'),  # NUEVO
     ]
     
     id_log = models.AutoField(primary_key=True)

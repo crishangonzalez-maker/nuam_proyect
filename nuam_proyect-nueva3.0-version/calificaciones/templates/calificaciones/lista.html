@@ -65,11 +65,17 @@
                 </form>
             </div>
         </div>
+        <!-- En lista.html, cerca del botón de Nueva Calificación -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2>Calificaciones Registradas</h2>
-            <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-success">
-                ➕ Nueva Calificación
-            </a>
+            <div>
+                <a href="{% url 'carga_masiva' %}" class="btn btn-info me-2">
+                    📤 Carga Masiva
+                </a>
+                <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-success">
+                    ➕ Nueva Calificación
+                </a>
+            </div>
         </div>
 
         <!-- Tabla de calificaciones -->

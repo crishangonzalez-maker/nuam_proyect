@@ -720,6 +720,12 @@
                         </a>
                     </li>
                     {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'carga-masiva' in request.resolver_match.url_name %}active{% endif %}"
+                            href="{% url 'carga_masiva' %}">
+                            📤 Carga Masiva
+                        </a>
+                    </li>
 
                     <!-- Gestión de Usuarios - SOLO ADMIN -->
                     {% if user.is_authenticated and user.rol == 'Administrador' %}

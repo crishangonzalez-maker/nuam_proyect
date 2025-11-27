@@ -3,7 +3,8 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden
 from .models import CalificacionTributaria, Usuario, FactorCalificacion, LogAuditoria, ArchivoCarga
 from .forms import (
-    CalificacionTributariaForm, MontosForm, FactoresForm, FiltroCalificacionesForm
+    CalificacionTributariaForm, MontosForm, FactoresForm, FiltroCalificacionesForm,
+    LoginForm, UsuarioForm, MfaVerifyForm, MfaSetupForm  # AÑADIR LOS NUEVOS FORMULARIOS
 )
 from decimal import Decimal
 from django.contrib.auth.hashers import make_password
@@ -14,8 +15,537 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from .decorators import administrador_required, analista_required, auditor_required, corredor_required, solo_lectura_required, editor_required
-from .forms import LoginForm, UsuarioForm
 from django.views.decorators.csrf import csrf_protect
+
+# MFA IMPORTS
+from django_otp.plugins.otp_totp.models import TOTPDevice
+from django_otp import login as otp_login
+from django.contrib.auth import login as auth_login
+import base64
+import qrcode
+from io import BytesIO
+import urllib.parse
+
+import pandas as pd
+import chardet
+from datetime import datetime
+from django.core.files.storage import FileSystemStorage
+import os
+from decimal import Decimal
+
+# Asegúrate de que esta importación esté presente:
+from .forms import (
+    CalificacionTributariaForm, MontosForm, FactoresForm, FiltroCalificacionesForm,
+    LoginForm, UsuarioForm, MfaVerifyForm, MfaSetupForm, CargaMasivaForm  # ← AÑADIR CargaMasivaForm aquí
+)
+
+# ... el resto de tu código de views.py ...
+@login_required
+@editor_required
+def carga_masiva(request):
+    """Vista para carga masiva de calificaciones desde archivo"""
+    if request.method == 'POST':
+        form = CargaMasivaForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = request.FILES['archivo']
+            tipo_carga = form.cleaned_data['tipo_carga']
+            sobrescribir = form.cleaned_data['sobrescribir']
+            
+            try:
+                resultados = procesar_archivo_carga(archivo, tipo_carga, sobrescribir, request.user)
+                
+                # Crear registro en ArchivoCarga
+                archivo_carga = ArchivoCarga.objects.create(
+                    nombre_archivo=archivo.name,
+                    tipo_archivo='CSV_FACTORES' if tipo_carga == 'factores' else 'DJ1948',
+                    usuario_carga=request.user,
+                    estado_proceso='PROCESADO',
+                    registros_procesados=resultados['procesados'],
+                    registros_error=resultados['errores'],
+                    errores_detalle=resultados.get('errores_detalle', '')
+                )
+                
+                # Log de auditoría
+                LogAuditoria.objects.create(
+                    accion='CARGA_MASIVA',
+                    usuario_responsable=request.user,
+                    detalle=f'Carga masiva: {resultados["procesados"]} procesados, {resultados["errores"]} errores',
+                    ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
+                )
+                
+                messages.success(
+                    request, 
+                    f'✅ Carga masiva completada: {resultados["procesados"]} registros procesados, {resultados["errores"]} errores'
+                )
+                
+                if resultados.get('errores_detalle'):
+                    messages.warning(request, f'Algunos registros tuvieron errores: {resultados["errores_detalle"]}')
+                
+                return redirect('lista_calificaciones')
+                
+            except Exception as e:
+                messages.error(request, f'❌ Error al procesar archivo: {str(e)}')
+                # Crear registro de error en ArchivoCarga
+                ArchivoCarga.objects.create(
+                    nombre_archivo=archivo.name,
+                    tipo_archivo='CSV_FACTORES' if tipo_carga == 'factores' else 'DJ1948',
+                    usuario_carga=request.user,
+                    estado_proceso='ERROR',
+                    errores_detalle=str(e)
+                )
+    else:
+        form = CargaMasivaForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Carga Masiva de Calificaciones'
+    }
+    return render(request, 'calificaciones/carga_masiva.html', context)
+
+# views.py - Reemplazar las funciones procesar_archivo_carga y procesar_fila_factores
+
+def detectar_encoding(archivo):
+    """Detecta el encoding del archivo de manera más robusta"""
+    # Leer una muestra del archivo para detectar encoding
+    raw_data = archivo.read(10000)
+    archivo.seek(0)  # Reset file pointer
+    
+    # Intentar detectar encoding
+    deteccion = chardet.detect(raw_data)
+    encoding_detectado = deteccion['encoding']
+    confianza = deteccion['confidence']
+    
+    print(f"Encoding detectado: {encoding_detectado} con confianza: {confianza}")
+    
+    # Si la confianza es baja o no se detecta, probar encodings comunes
+    if not encoding_detectado or confianza < 0.7:
+        encodings_a_probar = ['latin-1', 'cp1252', 'iso-8859-1', 'utf-8']
+        for enc in encodings_a_probar:
+            try:
+                archivo.seek(0)
+                raw_data.decode(enc)
+                print(f"Encoding válido encontrado: {enc}")
+                return enc
+            except UnicodeDecodeError:
+                continue
+    
+    return encoding_detectado or 'latin-1'
+
+def procesar_archivo_carga(archivo, tipo_carga, sobrescribir, usuario):
+    """Procesa el archivo de carga y crea/actualiza las calificaciones"""
+    resultados = {
+        'procesados': 0,
+        'errores': 0,
+        'errores_detalle': []
+    }
+    
+    try:
+        # Detectar encoding y leer archivo
+        if archivo.name.endswith('.csv'):
+            encoding = detectar_encoding(archivo)
+            print(f"Usando encoding: {encoding} para el archivo CSV")
+            
+            # Leer CSV con encoding detectado
+            try:
+                df = pd.read_csv(archivo, encoding=encoding, dtype=str)
+            except UnicodeDecodeError:
+                # Si falla, intentar con otros encodings
+                for enc in ['latin-1', 'cp1252', 'iso-8859-1']:
+                    try:
+                        archivo.seek(0)
+                        df = pd.read_csv(archivo, encoding=enc, dtype=str)
+                        print(f"CSV leído exitosamente con encoding: {enc}")
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    raise Exception("No se pudo leer el archivo CSV con ningún encoding compatible")
+        else:
+            # Leer Excel
+            df = pd.read_excel(archivo, dtype=str)
+            print("Archivo Excel leído exitosamente")
+        
+        # Verificar que el DataFrame no esté vacío
+        if df.empty:
+            raise Exception("El archivo está vacío o no contiene datos")
+        
+        print(f"Archivo procesado: {len(df)} filas encontradas")
+        
+        # Reemplazar NaN con None y espacios en blanco
+        df = df.replace({pd.NA: None, '': None})
+        df = df.where(pd.notnull(df), None)
+        
+        # Normalizar nombres de columnas (eliminar espacios extras)
+        df.columns = df.columns.str.strip()
+        
+        # Procesar cada fila
+        for index, fila in df.iterrows():
+            try:
+                if tipo_carga == 'factores':
+                    procesado = procesar_fila_factores(fila, sobrescribir, usuario)
+                else:
+                    procesado = procesar_fila_montos(fila, sobrescribir, usuario)
+                
+                if procesado:
+                    resultados['procesados'] += 1
+                else:
+                    resultados['errores'] += 1
+                    resultados['errores_detalle'].append(f"Fila {index + 2}: Registro existente omitido")
+                    
+            except Exception as e:
+                resultados['errores'] += 1
+                error_msg = f"Fila {index + 2}: {str(e)}"
+                resultados['errores_detalle'].append(error_msg)
+                print(f"Error en fila {index + 2}: {e}")
+        
+        # Limitar el detalle de errores para no sobrecargar
+        if len(resultados['errores_detalle']) > 10:
+            resultados['errores_detalle'] = resultados['errores_detalle'][:10] + ['... más errores']
+        
+        resultados['errores_detalle'] = '; '.join(resultados['errores_detalle'])
+        
+        print(f"Procesamiento completado: {resultados['procesados']} exitosos, {resultados['errores']} errores")
+        
+    except Exception as e:
+        print(f"Error general al procesar archivo: {e}")
+        raise Exception(f"Error al leer archivo: {str(e)}")
+    
+    return resultados
+
+def procesar_fila_factores(fila, sobrescribir, usuario):
+    """Procesa una fila con factores ya calculados"""
+    print(f"Procesando fila: {fila.to_dict()}")
+    
+    # Normalizar nombres de campos (case insensitive)
+    fila_dict = {str(k).strip().lower(): v for k, v in fila.items() if v is not None}
+    
+    # Mapear nombres de campos
+    mapeo_campos = {
+        'ejercicio': 'ejercicio',
+        'mercado': 'mercado', 
+        'instrumento': 'instrumento',
+        'fecha': 'fecha',
+        'secuencia': 'secuencia',
+        'numero_dividendo': 'numero_dividendo',
+        'numero de dividendo': 'numero_dividendo',
+        'descripcion': 'descripcion_dividendo',
+        'descripción': 'descripcion_dividendo',
+        'tipo_sociedad': 'tipo_sociedad',
+        'tipo sociedad': 'tipo_sociedad',
+        'valor_historico': 'valor_historico',
+        'valor histórico': 'valor_historico',
+        'acogido_isfut': 'acogido_isfut',
+        'acogido isfut': 'acogido_isfut',
+        'factor_actualizacion': 'factor_actualizacion',
+        'factor actualizacion': 'factor_actualizacion'
+    }
+    
+    # Crear diccionario normalizado
+    fila_normalizada = {}
+    for campo_orig, campo_dest in mapeo_campos.items():
+        if campo_orig in fila_dict and fila_dict[campo_orig]:
+            fila_normalizada[campo_dest] = fila_dict[campo_orig]
+    
+    # Agregar factores
+    for i in range(8, 38):
+        factor_key = f'factor_{i}'
+        factor_key_alt = f'factor {i}'
+        if factor_key in fila_dict and fila_dict[factor_key]:
+            fila_normalizada[factor_key] = fila_dict[factor_key]
+        elif factor_key_alt in fila_dict and fila_dict[factor_key_alt]:
+            fila_normalizada[factor_key] = fila_dict[factor_key_alt]
+    
+    # Validar campos obligatorios
+    campos_obligatorios = ['ejercicio', 'mercado', 'instrumento', 'fecha', 'secuencia']
+    for campo in campos_obligatorios:
+        if campo not in fila_normalizada or not fila_normalizada[campo]:
+            raise ValueError(f"Campo obligatorio faltante: {campo}")
+    
+    # Convertir y validar tipos de datos
+    try:
+        ejercicio = int(fila_normalizada['ejercicio'])
+        secuencia = int(fila_normalizada['secuencia'])
+        
+        # Convertir fecha (aceptar múltiples formatos)
+        fecha_str = fila_normalizada['fecha']
+        try:
+            fecha_pago = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            try:
+                fecha_pago = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+            except ValueError:
+                try:
+                    fecha_pago = datetime.strptime(fecha_str, '%d-%m-%Y').date()
+                except ValueError:
+                    raise ValueError(f"Formato de fecha no válido: {fecha_str}. Use YYYY-MM-DD, DD/MM/YYYY o DD-MM-YYYY")
+        
+        mercado = fila_normalizada['mercado'].upper()
+        instrumento = fila_normalizada['instrumento'].upper()
+        
+    except ValueError as e:
+        raise ValueError(f"Error en tipos de datos: {str(e)}")
+    
+    # Buscar calificación existente
+    calificacion = CalificacionTributaria.objects.filter(
+        ejercicio=ejercicio,
+        mercado=mercado,
+        instrumento=instrumento,
+        secuencia_evento=secuencia,
+        estado=True
+    ).first()
+    
+    if calificacion and not sobrescribir:
+        print(f"Registro existente omitido: {instrumento} - {ejercicio} - {secuencia}")
+        return False  # Omitir registro existente
+    
+    # Preparar datos para crear/actualizar calificación
+    datos_calificacion = {
+        'ejercicio': ejercicio,
+        'mercado': mercado,
+        'instrumento': instrumento,
+        'fecha_pago': fecha_pago,
+        'secuencia_evento': secuencia,
+        'numero_dividendo': int(fila_normalizada.get('numero_dividendo', 0)),
+        'descripcion_dividendo': fila_normalizada.get('descripcion_dividendo', ''),
+        'tipo_sociedad': fila_normalizada.get('tipo_sociedad', 'A'),
+        'acogido_isfut': fila_normalizada.get('acogido_isfut', 'false').lower() in ['true', '1', 'si', 'sí', 'verdadero'],
+        'origen': 'Carga_Masiva',
+        'usuario_creador': usuario
+    }
+    
+    # Agregar campos opcionales si existen
+    if 'valor_historico' in fila_normalizada and fila_normalizada['valor_historico']:
+        try:
+            datos_calificacion['valor_historico'] = Decimal(str(fila_normalizada['valor_historico']).replace(',', '.'))
+        except:
+            datos_calificacion['valor_historico'] = None
+    
+    if 'factor_actualizacion' in fila_normalizada and fila_normalizada['factor_actualizacion']:
+        try:
+            datos_calificacion['factor_actualizacion'] = Decimal(str(fila_normalizada['factor_actualizacion']).replace(',', '.'))
+        except:
+            datos_calificacion['factor_actualizacion'] = Decimal('0')
+    
+    # Crear o actualizar calificación
+    if not calificacion:
+        calificacion = CalificacionTributaria(**datos_calificacion)
+        calificacion.save()
+        print(f"Nueva calificación creada: {instrumento} - {ejercicio} - {secuencia}")
+    else:
+        for field, value in datos_calificacion.items():
+            setattr(calificacion, field, value)
+        calificacion.save()
+        print(f"Calificación actualizada: {instrumento} - {ejercicio} - {secuencia}")
+    
+    # Crear o actualizar factores
+    factores, created = FactorCalificacion.objects.get_or_create(
+        id_calificacion=calificacion
+    )
+    
+    # Actualizar factores del 8 al 37
+    factores_actualizados = 0
+    for i in range(8, 38):
+        factor_key = f'factor_{i}'
+        if factor_key in fila_normalizada and fila_normalizada[factor_key]:
+            try:
+                # Convertir a Decimal, manejando comas como separadores decimales
+                valor_str = str(fila_normalizada[factor_key]).replace(',', '.')
+                valor_decimal = Decimal(valor_str)
+                setattr(factores, factor_key, valor_decimal)
+                factores_actualizados += 1
+            except Exception as e:
+                print(f"Error convirtiendo {factor_key}: {fila_normalizada[factor_key]} - {e}")
+                setattr(factores, factor_key, None)
+    
+    if factores_actualizados > 0:
+        factores.save()
+        print(f"Factores actualizados: {factores_actualizados} factores para {instrumento}")
+    
+    return True
+
+def procesar_fila_montos(fila, sobrescribir, usuario):
+    """Procesa una fila con montos para calcular factores"""
+    # Por ahora, usar misma lógica que factores hasta que definamos estructura de montos
+    return procesar_fila_factores(fila, sobrescribir, usuario)
+
+
+def login_view(request):
+    """Vista de login personalizada con soporte MFA"""
+    if request.user.is_authenticated:
+        return redirect('lista_calificaciones')
+    
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            correo = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=correo, password=password)
+            
+            if user is not None and user.estado:
+                # Si el usuario tiene MFA configurado, redirigir a verificación
+                if user.has_mfa_enabled():
+                    request.session['mfa_user_id'] = user.id
+                    request.session['mfa_backend'] = user.backend
+                    return redirect('mfa_verify')
+                else:
+                    # Login normal sin MFA
+                    auth_login(request, user)
+                    messages.success(request, f'¡Bienvenido {user.nombre}!')
+                    
+                    # Redirección según rol
+                    next_url = request.GET.get('next', 'lista_calificaciones')
+                    return redirect(next_url)
+            else:
+                messages.error(request, 'Credenciales inválidas o usuario inactivo')
+    else:
+        form = LoginForm()
+    
+    return render(request, 'calificaciones/login.html', {'form': form})
+
+@login_required
+def mfa_setup(request):
+    """Vista para configurar MFA por primera vez"""
+    print("=== MFA SETUP VISTA INICIADA ===")
+    
+    if request.user.has_mfa_enabled():
+        messages.info(request, 'MFA ya está configurado para tu cuenta.')
+        return redirect('perfil_usuario')
+    
+    device = request.user.setup_mfa()
+    print(f"Dispositivo creado: {device}, Confirmado: {device.confirmed}")
+    
+    if request.method == 'POST':
+        print("=== MÉTODO POST DETECTADO ===")
+        form = MfaVerifyForm(request.user, request.POST)
+        print(f"Formulario válido: {form.is_valid()}")
+        print(f"Errores del formulario: {form.errors}")
+        
+        if form.is_valid():
+            print("=== FORMULARIO VÁLIDO ===")
+            # Verificar manualmente el token
+            token = form.cleaned_data['token']
+            print(f"Token recibido: {token}")
+            
+            is_valid = device.verify_token(token)
+            print(f"Token válido: {is_valid}")
+            
+            if is_valid:
+                device.confirmed = True
+                device.save()
+                messages.success(request, '✅ MFA configurado exitosamente!')
+                
+                LogAuditoria.objects.create(
+                    accion='MFA_SETUP',
+                    usuario_responsable=request.user,
+                    detalle='Configuración de MFA/2FA',
+                    ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
+                )
+                
+                return redirect('perfil_usuario')
+            else:
+                messages.error(request, '❌ Código de verificación inválido.')
+                print("Token inválido según verify_token")
+        else:
+            print("=== FORMULARIO INVÁLIDO ===")
+            messages.error(request, '❌ Por favor corrige los errores en el formulario.')
+    else:
+        print("=== MÉTODO GET ===")
+        form = MfaVerifyForm(request.user)
+    
+    # Generar QR code
+    issuer = "NUAM Calificaciones"
+    account_name = f"{request.user.correo}"
+    
+    otpauth_url = f"otpauth://totp/{urllib.parse.quote(issuer)}:{urllib.parse.quote(account_name)}?secret={device.bin_key}&issuer={urllib.parse.quote(issuer)}&digits=6"
+    
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    qr.add_data(otpauth_url)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    qr_code = base64.b64encode(buffer.getvalue()).decode()
+    
+    context = {
+        'form': form,
+        'qr_code': qr_code,
+        'secret_key': device.bin_key,
+        'account_name': account_name,
+        'issuer': issuer,
+    }
+    return render(request, 'calificaciones/mfa_setup.html', context)
+
+def mfa_verify(request):
+    """Vista para verificar token MFA después del login"""
+    user_id = request.session.get('mfa_user_id')
+    backend = request.session.get('mfa_backend')
+    
+    if not user_id or not backend:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('login')
+    
+    try:
+        user = Usuario.objects.get(id=user_id, estado=True)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Usuario no encontrado.')
+        return redirect('login')
+    
+    if request.method == 'POST':
+        # CORREGIDO: Pasar el usuario como primer argumento
+        form = MfaVerifyForm(user, request.POST)
+        if form.is_valid():
+            # Login exitoso con MFA
+            user.backend = backend
+            auth_login(request, user)
+            otp_login(request, form.get_device())
+            
+            # Limpiar sesión MFA
+            request.session.pop('mfa_user_id', None)
+            request.session.pop('mfa_backend', None)
+            
+            messages.success(request, f'¡Bienvenido {user.nombre}!')
+            
+            # Log de auditoría
+            LogAuditoria.objects.create(
+                accion='LOGIN',
+                usuario_responsable=user,
+                detalle='Inicio de sesión con MFA/2FA',
+                ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
+            )
+            
+            next_url = request.GET.get('next', 'lista_calificaciones')
+            return redirect(next_url)
+        else:
+            messages.error(request, 'Código de verificación inválido.')
+    else:
+        # CORREGIDO: Pasar el usuario como primer argumento
+        form = MfaVerifyForm(user)
+    
+    context = {
+        'form': form,
+        'user': user,
+    }
+    return render(request, 'calificaciones/mfa_verify.html', context)
+@login_required
+def mfa_disable(request):
+    """Vista para desactivar MFA"""
+    if request.method == 'POST':
+        device = request.user.get_mfa_device()
+        if device:
+            device.delete()
+            messages.success(request, 'MFA desactivado exitosamente.')
+            
+            # Log de auditoría
+            LogAuditoria.objects.create(
+                accion='MFA_DISABLE',
+                usuario_responsable=request.user,
+                detalle='Desactivación de MFA/2FA',
+                ip_origen=request.META.get('REMOTE_ADDR', '127.0.0.1')
+            )
+        else:
+            messages.info(request, 'MFA no estaba activado para tu cuenta.')
+    
+    return redirect('perfil_usuario')
 
 @login_required
 @administrador_required
@@ -589,17 +1119,26 @@ def logout_view(request):
 @login_required
 def perfil_usuario(request):
     """Vista para que los usuarios vean y editen su perfil"""
+    mfa_enabled = request.user.has_mfa_enabled()
+    
     if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Tu contraseña fue actualizada exitosamente!')
-            return redirect('perfil_usuario')
+        if 'change_password' in request.POST:
+            form = PasswordChangeForm(request.user, request.POST)
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Tu contraseña fue actualizada exitosamente!')
+                return redirect('perfil_usuario')
+        else:
+            form = PasswordChangeForm(request.user)
     else:
         form = PasswordChangeForm(request.user)
     
-    return render(request, 'calificaciones/perfil.html', {'form': form})
+    context = {
+        'form': form,
+        'mfa_enabled': mfa_enabled,
+    }
+    return render(request, 'calificaciones/perfil.html', context)
 
 @login_required
 @administrador_required

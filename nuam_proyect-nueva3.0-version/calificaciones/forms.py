@@ -1,9 +1,52 @@
 from django import forms
+from django.core.validators import RegexValidator
+from django_otp.forms import OTPTokenForm
 from .models import CalificacionTributaria, Usuario, FactorCalificacion
 from decimal import Decimal
-from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Usuario
+
+# ... tus otros formularios existentes ...
+
+class MfaVerifyForm(forms.Form):
+    """Formulario para verificar token MFA"""
+    token = forms.CharField(
+        label='Código de verificación',
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '000000',
+            'autocomplete': 'one-time-code',
+            'pattern': '[0-9]{6}',
+            'inputmode': 'numeric',
+            'style': 'text-align: center; font-size: 1.2rem; letter-spacing: 0.5em;'
+        })
+    )
+    
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+    
+    def clean_token(self):
+        token = self.cleaned_data.get('token')
+        
+        if not token:
+            raise forms.ValidationError('Este campo es obligatorio.')
+        
+        if not token.isdigit():
+            raise forms.ValidationError('El código debe contener solo números.')
+        
+        if len(token) != 6:
+            raise forms.ValidationError('El código debe tener exactamente 6 dígitos.')
+        
+        return token
+
+class MfaSetupForm(forms.Form):
+    """Formulario para configurar MFA"""
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
 class CalificacionTributariaForm(forms.ModelForm):
     """Formulario para ingreso manual de calificaciones tributarias"""
@@ -336,3 +379,33 @@ class UsuarioForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    
+class CargaMasivaForm(forms.Form):
+    """Formulario para carga masiva de calificaciones desde archivo"""
+    TIPO_CARGA_OPCIONES = [
+        ('factores', 'Factores (CSV con factores 8-37)'),
+        ('montos', 'Montos (CSV con montos para calcular factores)'),
+    ]
+    
+    tipo_carga = forms.ChoiceField(
+        choices=TIPO_CARGA_OPCIONES,
+        label="Tipo de Carga",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    archivo = forms.FileField(
+        label="Archivo CSV/Excel",
+        help_text="Seleccione el archivo con los datos de calificación",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv,.xlsx,.xls'
+        })
+    )
+    
+    sobrescribir = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Sobrescribir registros existentes",
+        help_text="Si está marcado, reemplazará registros existentes. Si no, los omitirá.",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
