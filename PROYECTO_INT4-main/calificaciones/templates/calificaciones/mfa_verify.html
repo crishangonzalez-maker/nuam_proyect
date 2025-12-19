@@ -1,0 +1,83 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">🔒 Verificación en Dos Pasos</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Hola {{ user.nombre }},</strong><br>
+                    Se requiere verificación adicional para completar el inicio de sesión.
+                </div>
+
+                <div class="text-center mb-4">
+                    <div style="font-size: 3rem;">📱</div>
+                    <p class="mb-0">Abre tu app de autenticación</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> Código de verificación inválido. Intenta nuevamente.
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_token" class="form-label">Código de 6 dígitos</label>
+                        {{ form.token }}
+                        <div class="form-text">
+                            Ingresa el código de 6 dígitos de tu app de autenticación
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        🔐 Verificar e Ingresar
+                    </button>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <div class="alert alert-light">
+                        <small class="text-muted">
+                            <strong>¿Problemas con el código?</strong><br>
+                            • Asegúrate de que la hora de tu dispositivo esté sincronizada<br>
+                            • El código cambia cada 30 segundos<br>
+                            • Verifica que hayas escaneado el código QR correctamente
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control {
+    text-align: center;
+    font-size: 1.2rem;
+    letter-spacing: 0.5em;
+    font-weight: bold;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus en el campo de código
+    const tokenInput = document.getElementById('id_token');
+    if (tokenInput) {
+        tokenInput.focus();
+        
+        // Auto-avanzar cuando se ingresa un dígito
+        tokenInput.addEventListener('input', function(e) {
+            if (this.value.length === 6) {
+                this.form.submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

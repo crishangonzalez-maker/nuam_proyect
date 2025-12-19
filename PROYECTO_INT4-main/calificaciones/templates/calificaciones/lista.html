@@ -1,0 +1,173 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">📊 Mantenedor de Calificaciones Tributarias - NUAM</h1>
+
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h4 class="card-title">{{ calificaciones.count }}</h4>
+                        <p class="card-text">Calificaciones</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h4 class="card-title">{{ calificaciones.count }}</h4>
+                        <p class="card-text">Activas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-4 filtros-section"> <!-- AGREGADA CLASE filtros-section -->
+            <div class="card-header">
+                <h5 class="mb-0">🔍 Filtros de Búsqueda</h5>
+            </div>
+            <div class="card-body filtros-content"> <!-- AGREGADA CLASE filtros-content -->
+                <form method="get">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="{{ form_filtro.ejercicio.id_for_label }}" class="form-label">
+                                {{ form_filtro.ejercicio.label }}
+                            </label>
+                            {{ form_filtro.ejercicio }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form_filtro.mercado.id_for_label }}" class="form-label">
+                                {{ form_filtro.mercado.label }}
+                            </label>
+                            {{ form_filtro.mercado }}
+                        </div>
+                        <div class="col-md-2">
+                            <label for="{{ form_filtro.origen.id_for_label }}" class="form-label">
+                                {{ form_filtro.origen.label }}
+                            </label>
+                            {{ form_filtro.origen }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form_filtro.instrumento.id_for_label }}" class="form-label">
+                                {{ form_filtro.instrumento.label }}
+                            </label>
+                            {{ form_filtro.instrumento }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">Buscar</button>
+                            <a href="{% url 'lista_calificaciones' %}" class="btn btn-outline-secondary">Limpiar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- En lista.html, cerca del botón de Nueva Calificación -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Calificaciones Registradas</h2>
+            <div>
+                {% if user.is_authenticated %}
+                    {% if user.rol == 'Administrador' or user.rol == 'Analista' or user.rol == 'Corredor' %}
+                    <a href="{% url 'carga_masiva' %}" class="btn btn-info me-2">
+                        📤 Carga Masiva
+                    </a>
+                    <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-success">
+                        ➕ Nueva Calificación
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tabla de calificaciones -->
+        {% if calificaciones %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Ejercicio</th>
+                        <th>Mercado</th>
+                        <th>Instrumento</th>
+                        <th>Fecha Pago</th>
+                        <th>Secuencia</th>
+                        <th>Origen</th>
+                        <th>ISFUT</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calificacion in calificaciones %}
+                    <tr>
+                        <td>{{ calificacion.id_calificacion }}</td>
+                        <td>{{ calificacion.ejercicio }}</td>
+                        <td>{{ calificacion.get_mercado_display }}</td>
+                        <td><strong>{{ calificacion.instrumento }}</strong></td>
+                        <td>{{ calificacion.fecha_pago|date:"d/m/Y" }}</td>
+                        <td>{{ calificacion.secuencia_evento }}</td>
+                        <td>
+                            <span
+                                class="badge bg-{% if calificacion.origen == 'Corredor' %}primary{% elif calificacion.origen == 'Sistema' %}success{% else %}warning{% endif %}">
+                                {{ calificacion.get_origen_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if calificacion.acogido_isfut %}
+                            <span class="badge bg-success">Sí</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <!-- En la tabla, sección de Acciones -->
+                        <td>
+                            <div class="action-buttons d-flex flex-wrap align-items-center">
+                                <!-- Botón Ver -->
+                                <a href="{% url 'detalle_calificacion' calificacion.id_calificacion %}"
+                                    class="btn btn-sm btn-outline-primary me-1" title="Ver detalles completos">
+                                    👁️ Ver
+                                </a>
+
+                                <!-- Botón Editar -->
+                                {% if user.rol == 'Administrador' or user.rol == 'Analista' %}
+                                <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}"
+                                    class="btn btn-sm btn-outline-warning me-1" title="Editar calificación">
+                                    ✏️ Editar
+                                </a>
+                                {% elif user.rol == 'Corredor' and calificacion.origen == 'Corredor' %}
+                                <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}"
+                                    class="btn btn-sm btn-outline-warning me-1" title="Editar calificación">
+                                    ✏️ Editar
+                                </a>
+                                {% endif %}
+
+                                <!-- Botón Eliminar -->
+                                {% if user.rol == 'Administrador' %}
+                                <form method="post" action="{% url 'eliminar_calificacion' calificacion.id_calificacion %}" class="d-inline mb-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar calificación" onclick="return confirm('¿Está seguro de eliminar la calificación de {{ calificacion.instrumento }}?');">
+                                        🗑️ Eliminar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <h4>📭 No se encontraron calificaciones</h4>
+            <p>No hay calificaciones tributarias que coincidan con los filtros aplicados.</p>
+            <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-primary">
+                ➕ Crear Primera Calificación
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

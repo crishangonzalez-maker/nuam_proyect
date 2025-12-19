@@ -1,0 +1,337 @@
+{% load tz %}
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>👁️ Detalle de Calificación Tributaria</h1>
+            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">
+                ← Volver al Listado
+            </a>
+        </div>
+
+        <!-- Mostrar mensajes -->
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <!-- Tarjeta de información básica - MEJORADA Y ORGANIZADA -->
+    <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">📋 Información Básica</h4>
+    </div>
+    <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+        
+        <!-- Primera fila: Información principal -->
+        <div class="row mb-4">
+            <div class="col-md-4 text-center border-end border-secondary">
+                <div class="mb-3">
+                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">ID Calificación</strong>
+                    <span class="badge bg-dark fs-6 px-3 py-2" style="color: white !important;">{{ calificacion.id_calificacion }}</span>
+                </div>
+            </div>
+            <div class="col-md-4 text-center border-end border-secondary">
+                <div class="mb-3">
+                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Instrumento</strong>
+                    <span class="fs-5" style="color: #ffffff !important;">{{ calificacion.instrumento }}</span>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="mb-3">
+                    <strong style="color: #ff4201; display: block; margin-bottom: 5px;">Ejercicio</strong>
+                    <span style="color: #ffffff !important; font-size: 1.2rem;">{{ calificacion.ejercicio }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segunda fila: Fechas y números - MEJOR ALINEADA -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 140px;">Fecha de Pago:</strong>
+                    <span style="color: #ffffff !important;">{{ calificacion.fecha_pago|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 140px;">Secuencia Evento:</strong>
+                    <span style="color: #ffffff !important;">{{ calificacion.secuencia_evento }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 140px;">Número Dividendo:</strong>
+                    <span style="color: #ffffff !important;">{{ calificacion.numero_dividendo }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tercera fila: Descripción -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="info-item-compact">
+                    <strong style="color: #ff4201; display: block; margin-bottom: 8px;">Descripción Dividendo:</strong>
+                    <span style="color: #ffffff !important; display: block; padding: 8px 12px; background-color: #2a2a2a; border-radius: 5px;">
+                        {{ calificacion.descripcion_dividendo|default:"Sin descripción" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuarta fila: Origen, ISFUT y valor histórico - MEJOR ALINEADA -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 80px;">Origen:</strong>
+                    <span class="badge bg-primary" style="color: #000000 !important;">
+                        {{ calificacion.get_origen_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 120px;">Acogido ISFUT:</strong>
+                    {% if calificacion.acogido_isfut %}
+                        <span class="badge bg-success" style="color: #ffffff !important;">Sí</span>
+                    {% else %}
+                        <span class="badge bg-secondary" style="color: #ffffff !important;">No</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if calificacion.valor_historico %}
+            <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center info-item-compact">
+                    <strong style="color: #ff4201; min-width: 120px;">Valor Histórico:</strong>
+                    <span style="color: #ffffff !important; font-weight: 600;">$ {{ calificacion.valor_historico|floatformat:2 }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+        <!-- Factores de Calificación (manteniendo el código anterior) -->
+        {% if factores %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">📊 Factores de Calificación</h4>
+            </div>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                <div class="row">
+                    <!-- Factores del 1 al 10 -->
+                    <div class="col-md-6">
+                        <h5 style="color: #ff4201;">Factores 1-10</h5>
+                        <table class="table table-sm factors-table">
+                            <tbody>
+                                <tr><td><strong style="color: #ff4201;">Factor 1:</strong></td><td class="text-end">{{ factores.factor1|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 2:</strong></td><td class="text-end">{{ factores.factor2|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 3:</strong></td><td class="text-end">{{ factores.factor3|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 4:</strong></td><td class="text-end">{{ factores.factor4|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 5:</strong></td><td class="text-end">{{ factores.factor5|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 6:</strong></td><td class="text-end">{{ factores.factor6|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 7:</strong></td><td class="text-end">{{ factores.factor7|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 8:</strong></td><td class="text-end">{{ factores.factor8|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 9:</strong></td><td class="text-end">{{ factores.factor9|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 10:</strong></td><td class="text-end">{{ factores.factor10|default:"-"|floatformat:8 }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Factores del 11 al 20 -->
+                    <div class="col-md-6">
+                        <h5 style="color: #ff4201;">Factores 11-20</h5>
+                        <table class="table table-sm factors-table">
+                            <tbody>
+                                <tr><td><strong style="color: #ff4201;">Factor 11:</strong></td><td class="text-end">{{ factores.factor11|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 12:</strong></td><td class="text-end">{{ factores.factor12|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 13:</strong></td><td class="text-end">{{ factores.factor13|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 14:</strong></td><td class="text-end">{{ factores.factor14|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 15:</strong></td><td class="text-end">{{ factores.factor15|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 16:</strong></td><td class="text-end">{{ factores.factor16|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 17:</strong></td><td class="text-end">{{ factores.factor17|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 18:</strong></td><td class="text-end">{{ factores.factor18|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 19:</strong></td><td class="text-end">{{ factores.factor19|default:"-"|floatformat:8 }}</td></tr>
+                                <tr><td><strong style="color: #ff4201;">Factor 20:</strong></td><td class="text-end">{{ factores.factor20|default:"-"|floatformat:8 }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Factores del 21 al 37 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5 style="color: #ff4201;">Factores 21-37</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered factors-table">
+                                <tbody>
+                                    <tr>
+                                        <td><strong style="color: #ff4201;">Factor 21:</strong></td><td>{{ factores.factor21|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 22:</strong></td><td>{{ factores.factor22|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 23:</strong></td><td>{{ factores.factor23|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 24:</strong></td><td>{{ factores.factor24|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong style="color: #ff4201;">Factor 25:</strong></td><td>{{ factores.factor25|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 26:</strong></td><td>{{ factores.factor26|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 27:</strong></td><td>{{ factores.factor27|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 28:</strong></td><td>{{ factores.factor28|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong style="color: #ff4201;">Factor 29:</strong></td><td>{{ factores.factor29|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 30:</strong></td><td>{{ factores.factor30|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 31:</strong></td><td>{{ factores.factor31|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 32:</strong></td><td>{{ factores.factor32|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong style="color: #ff4201;">Factor 33:</strong></td><td>{{ factores.factor33|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 34:</strong></td><td>{{ factores.factor34|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 35:</strong></td><td>{{ factores.factor35|default:"-"|floatformat:8 }}</td>
+                                        <td><strong style="color: #ff4201;">Factor 36:</strong></td><td>{{ factores.factor36|default:"-"|floatformat:8 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong style="color: #ff4201;">Factor 37:</strong></td><td>{{ factores.factor37|default:"-"|floatformat:8 }}</td>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <h5>⚠️ No se encontraron factores</h5>
+            <p>Esta calificación no tiene factores asociados en la base de datos.</p>
+            <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" class="btn btn-warning">
+                ✏️ Agregar Factores
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Historial de Auditoría -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">📝 Historial de Auditoría</h4>
+            </div>
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th style="color: #ff4201 !important;">Fecha</th>
+                                <th style="color: #ff4201 !important;">Acción</th>
+                                <th style="color: #ff4201 !important;">Usuario</th>
+                                <th style="color: #ff4201 !important;">Detalle</th>
+                                <th style="color: #ff4201 !important;">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                {% localtime on %}
+                                <td style="color: #ffffff !important;">{{ log.fecha_hora|date:"d/m/Y H:i" }}</td>
+                                {% endlocaltime %}
+                                <td style="color: #ffffff !important;">
+                                    <span class="badge bg-{% if log.accion == 'CREATE' %}success{% elif log.accion == 'UPDATE' %}warning{% else %}danger{% endif %}" style="color: #000000 !important;">
+                                        {{ log.get_accion_display }}
+                                    </span>
+                                </td>
+                                <td style="color: #ffffff !important;">{{ log.usuario_responsable.nombre }}</td>
+                                <td style="color: #ffffff !important;">{{ log.detalle }}</td>
+                                <td style="color: #ffffff !important;"><small>{{ log.ip_origen }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No hay registros de auditoría para esta calificación.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-between mt-4 flex-wrap align-items-center">
+            <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary mb-2 mb-md-0">
+                ← Volver al Listado
+            </a>
+            <div class="action-buttons">
+                <a href="{% url 'editar_calificacion_paso1' calificacion.id_calificacion %}" class="btn btn-sm btn-outline-warning me-1" title="Editar Calificación">
+                    ✏️ Editar
+                </a>
+                {% if user.rol == 'Administrador' %}
+                <form method="post" action="{% url 'eliminar_calificacion' calificacion.id_calificacion %}" class="d-inline mb-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Está seguro de eliminar esta calificación?');">🗑️ Eliminar</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para mejorar la organización visual */
+.info-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
+    margin-bottom: 10px;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.factors-table {
+    --bs-table-color: #ffffff !important;
+    --bs-table-bg: transparent !important;
+    --bs-table-border-color: #444444 !important;
+}
+
+.factors-table td, .factors-table th {
+    color: #ffffff !important;
+    border-color: #444444 !important;
+    padding: 8px 12px;
+}
+
+.border-secondary {
+    border-color: #444 !important;
+}
+
+/* Mejoras de espaciado y alineación */
+.text-center .badge {
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.fs-5 {
+    font-size: 1.4rem !important;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #444;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+    }
+    
+    .text-center {
+        text-align: left !important;
+    }
+}
+</style>
+{% endblock %}
