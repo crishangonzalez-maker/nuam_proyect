@@ -238,6 +238,33 @@ document.addEventListener('DOMContentLoaded', function() {
             this.setCustomValidity('');
         }
     });
+
+    // Validación cliente: fecha_pago no puede ser anterior al ejercicio
+    const ejercicioInput = document.getElementById('{{ form.ejercicio.id_for_label }}');
+    const fechaPagoInput = document.getElementById('{{ form.fecha_pago.id_for_label }}');
+
+    function validateFechaPago() {
+        if (!ejercicioInput || !fechaPagoInput) return;
+        const ejercicioVal = parseInt(ejercicioInput.value, 10);
+        const fechaVal = fechaPagoInput.value; // formato YYYY-MM-DD
+        if (ejercicioVal && fechaVal) {
+            const fecha = new Date(fechaVal + 'T00:00:00');
+            const inicioEj = new Date(ejercicioVal, 0, 1);
+            if (fecha < inicioEj) {
+                fechaPagoInput.setCustomValidity('La fecha de pago no puede ser anterior al inicio del ejercicio.');
+            } else {
+                fechaPagoInput.setCustomValidity('');
+            }
+        } else {
+            fechaPagoInput.setCustomValidity('');
+        }
+    }
+
+    if (ejercicioInput && fechaPagoInput) {
+        ejercicioInput.addEventListener('change', validateFechaPago);
+        fechaPagoInput.addEventListener('change', validateFechaPago);
+        fechaPagoInput.addEventListener('blur', validateFechaPago);
+    }
 });
 </script>
 {% endblock %}

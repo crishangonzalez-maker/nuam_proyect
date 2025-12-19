@@ -1,0 +1,92 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="mantenedor-header">
+                <h1 class="mantenedor-title">📈 Dashboard - Calificaciones</h1>
+                <p class="mantenedor-subtitle">Visión rápida de métricas y actividad reciente</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card p-3 text-white bg-dark">
+                <h5>Total de Calificaciones</h5>
+                <h2 class="display-6">{{ total }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 bg-dark text-white">
+                <h5>Distribución por Origen</h5>
+                <ul class="list-group list-group-flush mt-2">
+                    {% for o in por_origen %}
+                    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center text-white">
+                        {{ o.origen|default:'Desconocido' }}
+                        <span class="badge bg-primary rounded-pill">{{ o.count }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item bg-transparent text-white">No hay datos</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 bg-dark text-white">
+                <h5>Top Mercados</h5>
+                <ol class="mt-2">
+                    {% for m in por_mercado %}
+                    <li>{{ m.mercado }} <small class="text-muted">({{ m.count }})</small></li>
+                    {% empty %}
+                    <li class="text-muted">Sin datos</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card p-3 bg-dark text-white">
+                <h5>Calificaciones Recientes</h5>
+                <table class="table table-dark table-striped mt-2">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Instrumento</th>
+                            <th>Ejercicio</th>
+                            <th>Mercado</th>
+                            <th>Origen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in recientes %}
+                        <tr>
+                            <td>{{ c.id_calificacion }}</td>
+                            <td>{{ c.instrumento }}</td>
+                            <td>{{ c.ejercicio }}</td>
+                            <td>{{ c.get_mercado_display }}</td>
+                            <td>{{ c.get_origen_display }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">No hay calificaciones recientes</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 bg-dark text-white">
+                <h5>Acciones Rápidas</h5>
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{% url 'crear_calificacion_paso1' %}" class="btn btn-primary">➕ Nueva Calificación</a>
+                    <a href="{% url 'carga_masiva' %}" class="btn btn-info">📤 Carga Masiva</a>
+                    <a href="{% url 'lista_calificaciones' %}" class="btn btn-secondary">📋 Ver Lista</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
