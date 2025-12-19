@@ -1,0 +1,153 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">🔐 Configurar Autenticación de Dos Factores (MFA)</h4>
+            </div>
+            <div class="card-body">
+                <!-- Mostrar mensajes -->
+                {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="alert alert-info">
+                    <strong>Paso 1:</strong> Escanea el código QR con Microsoft Authenticator (o cualquier app TOTP)
+                </div>
+
+                <div class="text-center mb-4">
+                    {% if qr_is_svg %}
+                        <div class="border rounded d-inline-block" style="max-width:300px;">
+                            {{ qr_code|safe }}
+                        </div>
+                    {% elif qr_code %}
+                        <img src="data:image/png;base64,{{ qr_code }}" 
+                             alt="QR Code para Microsoft Authenticator" 
+                             class="img-fluid border rounded"
+                             style="max-width: 300px;">
+                    {% else %}
+                        <div class="alert alert-warning d-inline-block">QR no disponible — use la clave manual</div>
+                    {% endif %}
+                    <div class="mt-2">
+                        <small class="text-white-50">
+                            Cuenta: <strong class="text-white">{{ account_name }}</strong><br>
+                            Emisor: <strong class="text-white">{{ issuer }}</strong>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>Paso 2:</strong> O ingresa manualmente esta clave en tu app:<br>
+                    <div class="text-center mt-2">
+                        <code class="fs-5 bg-dark text-light p-2 rounded">{{ secret_key }}</code>
+                    </div>
+                    <small class="text-dark mt-2 d-block">
+                        En Microsoft Authenticator: Abrir la app → Añadir cuenta → "Otro (cuenta de TOTP)" → Ingresar clave manualmente
+                        <br>
+                        Cuenta: <strong class="text-dark">{{ account_name }}</strong> | Clave: <strong id="secretKey" class="text-dark">{{ secret_key }}</strong>
+                        <button type="button" id="copySecret" class="btn btn-sm btn-outline-secondary ms-2">Copiar</button>
+                    </small>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Paso 3:</strong> Ingresa el código de 6 dígitos de Google Authenticator para verificar
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Mostrar errores del formulario -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Errores encontrados:</strong>
+                        <ul class="mb-0">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_token" class="form-label">Código de Verificación</label>
+                        {{ form.token }}
+                        {% if form.token.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.token.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Ingresa el código de 6 dígitos que aparece en Google Authenticator</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            ✅ Verificar y Activar MFA
+                        </button>
+                        <a href="{% url 'perfil_usuario' %}" class="btn btn-secondary">
+                            ← Cancelar
+                        </a>
+                    </div>
+                </form>
+
+                <div class="mt-4 alert alert-light">
+                    <h6>💡 Consejos:</h6>
+                    <ul class="mb-0">
+                        <li>Asegúrate de que la hora de tu teléfono esté sincronizada</li>
+                        <li>El código cambia cada 30 segundos</li>
+                        <li>Si el código no funciona, espera al siguiente ciclo</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-control {
+    text-align: center;
+    font-size: 1.2rem;
+    letter-spacing: 0.5em;
+    font-weight: bold;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tokenInput = document.getElementById('id_token');
+    if (tokenInput) {
+        tokenInput.focus();
+        
+        // Auto-submit cuando se ingresen 6 dígitos
+        tokenInput.addEventListener('input', function(e) {
+            if (this.value.length === 6) {
+                this.form.submit();
+            }
+        });
+    }
+});
+</script>
+<script>
+document.getElementById('copySecret')?.addEventListener('click', function() {
+    const text = document.getElementById('secretKey')?.textContent || '';
+    if (!text) return;
+    navigator.clipboard?.writeText(text).then(() => {
+        alert('Clave copiada al portapapeles');
+    }).catch(() => {
+        alert('No se pudo copiar la clave automáticamente. Selecciona y copia manualmente.');
+    });
+});
+</script>
+{% endblock %}

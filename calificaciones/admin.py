@@ -1,13 +1,31 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from .models import Usuario, ArchivoCarga, CalificacionTributaria, FactorCalificacion, LogAuditoria
 
 @admin.register(Usuario)
-class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'correo', 'rol', 'estado', 'fecha_creacion']
-    list_filter = ['rol', 'estado']
+class UsuarioAdmin(UserAdmin):
+    list_display = ['nombre', 'correo', 'rol', 'estado', 'is_staff', 'fecha_creacion']
+    list_filter = ['rol', 'estado', 'is_staff']
     search_fields = ['nombre', 'correo']
     readonly_fields = ['fecha_creacion']
+    
+    fieldsets = (
+        (None, {'fields': ('correo', 'password')}),
+        ('Información Personal', {'fields': ('nombre', 'rol')}),
+        ('Permisos', {'fields': ('estado', 'is_staff', 'is_superuser')}),
+        ('Fechas', {'fields': ('fecha_creacion', 'fecha_actualizacion')}),
+    )
+    
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('correo', 'nombre', 'rol', 'password1', 'password2', 'is_staff', 'is_superuser'),
+        }),
+    )
+    
+    ordering = ['correo']
 
+# Los otros admin models se mantienen igual...
 @admin.register(ArchivoCarga)
 class ArchivoCargaAdmin(admin.ModelAdmin):
     list_display = ['nombre_archivo', 'tipo_archivo', 'usuario_carga', 'fecha_carga', 'estado_proceso']

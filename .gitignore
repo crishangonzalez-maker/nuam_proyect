@@ -1,12 +1,4 @@
-# Crear archivo .gitignore
-echo "# Django
-*.pyc
-*__pycache__/
-db.sqlite3
 .env
+db.sqlite3
 venv/
-
-# Archivos temporales
-*.log
-*.pot
-*.pyc" > .gitignore
+__pycache__/

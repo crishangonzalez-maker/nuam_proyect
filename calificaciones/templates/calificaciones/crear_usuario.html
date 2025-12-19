@@ -1,0 +1,106 @@
+{% extends 'calificaciones/base.html' %}
+
+{% block title %}Crear Usuario - NUAM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">👤 Crear Nuevo Usuario</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Errores encontrados:</strong>
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_nombre" class="form-label">Nombre Completo</label>
+                                    {{ form.nombre }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_correo" class="form-label">Correo Electrónico</label>
+                                    {{ form.correo }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_rol" class="form-label">Rol</label>
+                                    {{ form.rol }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_password" class="form-label">Contraseña</label>
+                                    {{ form.password }}
+                                    <div class="form-text">Dejar vacío para generar automáticamente</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main content row: left = form, right = password requirements -->
+                        <div class="row align-items-stretch">
+                            <div class="col-md-6 d-flex flex-column">
+                                <div class="form-check mb-3">
+                                    {{ form.estado }}
+                                    <label class="form-check-label" for="id_estado">
+                                        Usuario Activo
+                                    </label>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success">
+                                        💾 Guardar Usuario
+                                    </button>
+                                    <a href="{% url 'gestion_usuarios' %}" class="btn btn-secondary">
+                                        ← Cancelar
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 d-flex">
+                                <div class="mb-3 w-100 d-flex">
+                                    <div class="alert alert-info flex-fill d-flex flex-column"
+                                        style="background-color: #2a2a2a; border: 1px solid #444; color: #ffffff;">
+                                        <h6 style="color: #ff4201; margin-bottom: 15px;">📝 Requisitos de contraseña:</h6>
+                                        <ul class="mb-0" style="padding-left: 20px;">
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser similar a tu información personal</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">Debe contener al menos 8 caracteres</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser una contraseña común</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">No puede ser completamente numérica</li>
+                                            <li style="margin-bottom: 8px; color: #cccccc;">Recomendado: usar mayúsculas, minúsculas, números y símbolos</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

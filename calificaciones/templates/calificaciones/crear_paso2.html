@@ -19,18 +19,33 @@
             </div>
         </div>
 
-        <!-- Resumen datos paso 1 -->
-        <div class="card mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">Resumen - Datos Básicos</h5>
+        <!-- Resumen datos paso 1 - CAMBIADO: bg-light por bg-white y text-dark -->
+          <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">📋 Resumen - Datos Básicos Editados</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="background-color: #1a1a1a; color: #ffffff !important;">
                 <div class="row">
-                    <div class="col-md-3"><strong>Instrumento:</strong> {{ datos_paso1.instrumento }}</div>
-                    <div class="col-md-2"><strong>Ejercicio:</strong> {{ datos_paso1.ejercicio }}</div>
-                    <div class="col-md-2"><strong>Mercado:</strong> {{ datos_paso1.mercado }}</div>
-                    <div class="col-md-3"><strong>Fecha Pago:</strong> {{ datos_paso1.fecha_pago }}</div>
-                    <div class="col-md-2"><strong>Secuencia:</strong> {{ datos_paso1.secuencia_evento }}</div>
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Instrumento:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.instrumento }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Ejercicio:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.ejercicio }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Mercado:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.mercado }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong style="color: #ff4201;">Fecha Pago:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.fecha_pago }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <strong style="color: #ff4201;">Secuencia:</strong><br>
+                        <span style="color: #ffffff !important;">{{ datos_paso1.secuencia_evento }}</span>
+                    </div>
                 </div>
             </div>
         </div>
